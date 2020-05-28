@@ -1,0 +1,35 @@
+`name: slurmtop
+channels:
+  - defaults
+dependencies:
+  - _libgcc_mutex=0.1=main
+  - attrs=19.3.0=py_0
+  - ca-certificates=2020.1.1=0
+  - certifi=2020.4.5.1=py38_0
+  - ld_impl_linux-64=2.33.1=h53a641e_7
+  - libedit=3.1.20181209=hc058e9b_0
+  - libffi=3.3=he6710b0_1
+  - libgcc-ng=9.1.0=hdf63c60_0
+  - libstdcxx-ng=9.1.0=hdf63c60_0
+  - more-itertools=8.3.0=py_0
+  - ncurses=6.2=he6710b0_1
+  - openssl=1.1.1g=h7b6447c_0
+  - packaging=20.3=py_0
+  - pip=20.0.2=py38_3
+  - pluggy=0.13.1=py38_0
+  - py=1.8.1=py_0
+  - pyparsing=2.4.7=py_0
+  - pytest=5.4.2=py38_0
+  - python=3.8.3=hcff3b4d_0
+  - readline=8.0=h7b6447c_0
+  - setuptools=46.4.0=py38_0
+  - six=1.14.0=py38_0
+  - sqlite=3.31.1=h62c20be_1
+  - tk=8.6.8=hbc83047_0
+  - wcwidth=0.1.9=py_0
+  - wheel=0.34.2=py38_0
+  - xz=5.2.5=h7b6447c_0
+  - zlib=1.2.11=h7b6447c_3
+  - pip:
+    - urwid==2.1.0
+prefix: /home/milad/workspace/miniconda3/envs/slurmtop
