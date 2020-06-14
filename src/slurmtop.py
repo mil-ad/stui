@@ -1,8 +1,20 @@
 import urwid
+import slurm
 
 def exit_on_q(key):
     if key in ('q', 'Q'):
         raise urwid.ExitMainLoop()
+
+
+def menu_button(label, callback):
+    button = urwid.Button(label)
+    urwid.connect_signal(button, 'click', callback)
+    return urwid.AttrMap(button, None, focus_map='reversed')
+
+def menu(title, menu_items):
+    body = [urwid.Text(title), urwid.Divider()]
+    body.extend(menu_items)
+    return urwid.ListBox(urwid.SimpleFocusListWalker(body))
 
 def job_context_menu():
     cancel_job = urwid.Button(u"Cancel Job")
@@ -12,17 +24,12 @@ def job_context_menu():
 
 def job_list():
     jobs = [u"job1", u"job2", u"job3"]
+    jobs = slurm.squeue_loop()
 
-    queue = []
-    for job in jobs:
-        b = urwid.Button(job)
-        queue.append(urwid.AttrWrap(b, None, "reversed"))
-        urwid.connect_signal(b, "click", job_context_menu)
+    captions = [f'Job ID {j["JOBID"]} -- {j["NAME"]}' for j in jobs]
 
-    lw = urwid.SimpleFocusListWalker(queue)
-    lb = urwid.ListBox(lw)
-
-    return lb
+    menu_buttons = [menu_button(c, job_context_menu) for c in captions]
+    return menu("Job List", menu_buttons)
 
 if __name__ == "__main__":
 
