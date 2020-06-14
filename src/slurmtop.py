@@ -1,14 +1,24 @@
 import urwid
 import slurm
 
+
+class JobWidget(urwid.Text):
+    def selectable(self):
+        return True
+
+    def keypress(self, size, key):
+        return key
+
+
 def exit_on_q(key):
     if key in ('q', 'Q'):
         raise urwid.ExitMainLoop()
 
 
 def menu_button(label, callback):
-    button = urwid.Button(label)
-    urwid.connect_signal(button, 'click', callback)
+    button = JobWidget(label)
+    # button = urwid.Text(label)
+    # urwid.connect_signal(button, 'click', callback)
     return urwid.AttrMap(button, None, focus_map='reversed')
 
 def menu(title, menu_items):
@@ -23,10 +33,16 @@ def job_context_menu():
     urwid.Pile([cancel_job, back_button])
 
 def job_list():
-    jobs = [u"job1", u"job2", u"job3"]
-    jobs = slurm.squeue_loop()
+    jobs = slurm.get_jobs()
 
-    captions = [f'Job ID {j["JOBID"]} -- {j["NAME"]}' for j in jobs]
+    captions = [str(j) for j in jobs]
+    print(captions)
+
+    # menu_buttons = []
+    # for j in jobs:
+    #     c1 = menu_button(j.job_id, job_context_menu)
+    #     c2 = menu_button(j.user, job_context_menu)
+    #     menu_buttons.append(urwid.Columns([c1, c2]))
 
     menu_buttons = [menu_button(c, job_context_menu) for c in captions]
     return menu("Job List", menu_buttons)
