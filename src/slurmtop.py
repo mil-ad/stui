@@ -1,6 +1,8 @@
 import urwid
 import slurm
 
+UPDATE_INTERVAL = 5
+
 
 class JobWidget(urwid.Text):
     def selectable(self):
@@ -47,7 +49,30 @@ def job_context_menu():
     cancel_job = urwid.Button(u"Cancel Job")
     back_button = urwid.Button(u"Back")
 
-    urwid.Pile([cancel_job, back_button])
+    x = urwid.Pile([cancel_job, back_button])
+
+    x = urwid.Overlay(
+        x,
+        urwid.SolidFill(u"\N{MEDIUM SHADE}"),
+        align="center",
+        width=("relative", 60),
+        valign="middle",
+        height=("relative", 60),
+        min_width=20,
+        min_height=9,
+    )
+
+    return x
+
+
+def filter_panel():
+
+    f = urwid.Pile([urwid.CheckBox("All Partitions"), urwid.CheckBox("Mine")])
+    f = urwid.Filler(f, valign="top")
+
+    options_panel = StyledLineBox(urwid.Filler(urwid.CheckBox("All")), "Options")
+
+    return StyledLineBox(f, "Options")
 
 
 def queue_panel():
@@ -69,13 +94,21 @@ def queue_panel():
 if __name__ == "__main__":
 
     qpanel = queue_panel()
-    options_panel = StyledLineBox(urwid.Filler(urwid.CheckBox("All")), "Options")
+    fpanel = filter_panel()
 
     top_widget = urwid.Columns(
-        [("weight", 80, qpanel), ("weight", 20, options_panel)], dividechars=1
+        [("weight", 80, qpanel), ("weight", 20, fpanel)], dividechars=1
     )
 
     loop = urwid.MainLoop(
         top_widget, palette=[("reversed", "standout", "")], unhandled_input=exit_on_q
     )
+
+    def refresh(_loop, user_data):
+        qpanel = queue_panel()
+        top_widget.contents[0] = (qpanel, top_widget.options("weight", 80))
+        _loop.set_alarm_in(UPDATE_INTERVAL, refresh)
+
+    # loop.set_alarm_in(UPDATE_INTERVAL, refresh)
+
     loop.run()
