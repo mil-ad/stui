@@ -11,7 +11,7 @@ class JobWidget(urwid.Text):
 
 
 def exit_on_q(key):
-    if key in ('q', 'Q'):
+    if key in ("q", "Q"):
         raise urwid.ExitMainLoop()
 
 
