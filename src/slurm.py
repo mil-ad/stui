@@ -1,5 +1,6 @@
 import subprocess
 
+
 class Cluster(object):
     def __init__(self):
         super().__init__()
@@ -9,37 +10,40 @@ class Cluster(object):
         # self.nodes = get_nodes()
         self.partitions = None
 
+
 class Partition(object):
     def __init__(self):
         super().__init__()
+
 
 class Job(object):
     def __init__(self, string):
         super().__init__()
 
-        self.job_id =  string["JOBID"]
+        self.job_id = string["JOBID"]
         self.nodes = string["NODES"]
         self.partition = string["PARTITION"]
-        self.name =  string["NAME"]
+        self.name = string["NAME"]
         self.user = string["USER"]
-        self.state =  string["ST"]
+        self.state = string["ST"]
         # self.time
 
     def __repr__(self):
         return f"{self.job_id} User: {self.user} State: {self.state}"
 
+
 class JobStep(object):
     def __init__(self):
         super().__init__()
+
 
 class Node(object):
     def __init__(self):
         super().__init__()
 
 
-
 def get_jobs():
-    command = "ssh yarin squeue"
+    command = "ssh aoraki squeue"
     squeue_process = subprocess.run(command.split(" "), capture_output=True)
 
     o = squeue_process.stdout.decode("utf-8").splitlines()
