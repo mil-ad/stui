@@ -12,11 +12,6 @@ class JobWidget(urwid.Text):
         return key
 
 
-def exit_on_q(key):
-    if key in ("q", "Q"):
-        raise urwid.ExitMainLoop()
-
-
 def menu_button(label, callback):
     button = JobWidget(label)
     # button = urwid.Text(label)
@@ -91,24 +86,52 @@ def queue_panel():
     return menu("Queue", menu_buttons)
 
 
-if __name__ == "__main__":
+class SlurmtopApp(object):
+    def __init__(self):
+        super().__init__()
 
-    qpanel = queue_panel()
-    fpanel = filter_panel()
+        self.header = urwid.Text("my header")
 
-    top_widget = urwid.Columns(
-        [("weight", 80, qpanel), ("weight", 20, fpanel)], dividechars=1
-    )
+        # self.footer = urwid.Text("my footer")
+        self.footer = urwid.Columns([urwid.Button("foo"), urwid.Button("foo")])
+        # self.footer = urwid.Columns(
+        #     urwid.SimpleFocusListWalker([urwid.Button("foo"), urwid.Button("bar")])
+        # )
 
-    loop = urwid.MainLoop(
-        top_widget, palette=[("reversed", "standout", "")], unhandled_input=exit_on_q
-    )
-
-    def refresh(_loop, user_data):
         qpanel = queue_panel()
-        top_widget.contents[0] = (qpanel, top_widget.options("weight", 80))
-        _loop.set_alarm_in(UPDATE_INTERVAL, refresh)
+        fpanel = filter_panel()
+
+        self.body = urwid.Columns(
+            [("weight", 80, qpanel), ("weight", 20, fpanel)], dividechars=1
+        )
+
+        self.view = urwid.Frame(
+            urwid.AttrWrap(self.body, "body"),
+            header=urwid.AttrWrap(self.header, "head"),
+            footer=urwid.AttrWrap(self.footer, "foot"),
+        )
+
+    def run(self):
+
+        self.loop = urwid.MainLoop(
+            self.view,
+            palette=[("reversed", "standout", "")],
+            unhandled_input=self.exit_on_q,
+        )
+
+        self.loop.run()
+
+    def exit_on_q(self, key):
+        if key in ("q", "Q"):
+            raise urwid.ExitMainLoop()
+
+    # def refresh(_loop, user_data):
+    #     qpanel = queue_panel()
+    #     top_widget.contents[0] = (qpanel, top_widget.options("weight", 80))
+    #     _loop.set_alarm_in(UPDATE_INTERVAL, refresh)
 
     # loop.set_alarm_in(UPDATE_INTERVAL, refresh)
 
-    loop.run()
+
+if __name__ == "__main__":
+    SlurmtopApp().run()
