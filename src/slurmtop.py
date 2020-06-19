@@ -1,10 +1,44 @@
 import urwid
+from urwid import Text, Columns, Pile, Filler
 import slurm
 
 UPDATE_INTERVAL = 5
 
 
-class JobWidget(urwid.Text):
+class FancyLineBox(urwid.LineBox):
+    def __init__(self, original_widget, title):
+        super().__init__(
+            original_widget,
+            title,
+            title_align="left",
+            tline="─",
+            trcorner="╮",
+            tlcorner="╭",
+            bline="─",
+            blcorner="╰",
+            brcorner="╯",
+            lline="│",
+            rline="│",
+        )
+
+
+class TabLineBox(urwid.LineBox):
+    def __init__(self, original_widget):
+        super().__init__(
+            original_widget,
+            title="",
+            tline="",
+            trcorner="",
+            tlcorner="",
+            bline="─",
+            blcorner="╰",
+            brcorner="╯",
+            lline="│",
+            rline="│",
+        )
+
+
+class JobText(urwid.Text):
     def selectable(self):
         return True
 
@@ -12,32 +46,30 @@ class JobWidget(urwid.Text):
         return key
 
 
-def menu_button(label, callback):
-    button = JobWidget(label)
-    # button = urwid.Text(label)
-    # urwid.connect_signal(button, 'click', callback)
+class JobRow(urwid.Columns):
+    def selectable(self):
+        return True
+
+    def keypress(self, size, key):
+        return key
+
+
+def create_job_widget(job, callback):
+    label = str(job)
+    button = JobRow([urwid.Text(label), urwid.Text(("key", u"running")),])
     return urwid.AttrMap(button, None, focus_map="reversed")
 
 
-class StyledLineBox(urwid.LineBox):
-    def __init__(self, original_widget, title):
-        super().__init__(
-            original_widget,
-            title,
-            title_align="left",
-            tlcorner="╭",
-            trcorner="╮",
-            blcorner="╰",
-            brcorner="╯",
-            tline="─",
-            bline="─",
-            lline="│",
-            rline="│",
-        )
+def queue_panel(cluster):
+    header = Columns([Text("Job ID"), Text("Foo")])
 
+    jobs_widgets = [
+        create_job_widget(job, job_context_menu) for job in cluster.get_jobs()
+    ]
 
-def menu(title, menu_items):
-    return StyledLineBox(urwid.ListBox(urwid.SimpleFocusListWalker(menu_items)), title)
+    return FancyLineBox(
+        urwid.ListBox(urwid.SimpleFocusListWalker(jobs_widgets)), "Queue",
+    )
 
 
 def job_context_menu():
@@ -65,40 +97,41 @@ def filter_panel():
     f = urwid.Pile([urwid.CheckBox("All Partitions"), urwid.CheckBox("Mine")])
     f = urwid.Filler(f, valign="top")
 
-    options_panel = StyledLineBox(urwid.Filler(urwid.CheckBox("All")), "Options")
+    options_panel = FancyLineBox(urwid.Filler(urwid.CheckBox("All")), "Options")
 
-    return StyledLineBox(f, "Options")
-
-
-def queue_panel():
-    jobs = slurm.get_jobs()
-
-    captions = [str(j) for j in jobs]
-    print(captions)
-
-    # menu_buttons = []
-    # for j in jobs:
-    #     c1 = menu_button(j.job_id, job_context_menu)
-    #     c2 = menu_button(j.user, job_context_menu)
-    #     menu_buttons.append(urwid.Columns([c1, c2]))
-
-    menu_buttons = [menu_button(c, job_context_menu) for c in captions]
-    return menu("Queue", menu_buttons)
+    return FancyLineBox(f, "Options")
 
 
 class SlurmtopApp(object):
     def __init__(self):
         super().__init__()
 
-        self.header = urwid.Text("my header")
+        self.cluster = slurm.Cluster()
 
-        # self.footer = urwid.Text("my footer")
-        self.footer = urwid.Columns([urwid.Button("foo"), urwid.Button("foo")])
-        # self.footer = urwid.Columns(
-        #     urwid.SimpleFocusListWalker([urwid.Button("foo"), urwid.Button("bar")])
-        # )
+        # (name, foreground, background, mono, foreground_high, background_high)
+        self.palette = [
+            # ("body", "black", "dark cyan", "standout"),
+            # ("foot", "light gray", "black"),
+            ("key", "light cyan,bold", "", ""),
+            # ("title", "white", "black",),
+            ("reversed", "standout", ""),
+            ("bold", "bold", ""),
+        ]
 
-        qpanel = queue_panel()
+        self.header = urwid.AttrMap(
+            urwid.Text(self.cluster.config["ClusterName"], align="center"), "bold"
+        )
+
+        self.footer = urwid.Columns(
+            [
+                (20, TabLineBox(urwid.Text("Queue"))),
+                (20, TabLineBox(urwid.Text("Nodes"))),
+                (20, TabLineBox(urwid.Text("Admin"))),
+                (20, TabLineBox(urwid.Text("Settings"))),
+            ]
+        )
+
+        qpanel = queue_panel(self.cluster)
         fpanel = filter_panel()
 
         self.body = urwid.Columns(
@@ -114,9 +147,7 @@ class SlurmtopApp(object):
     def run(self):
 
         self.loop = urwid.MainLoop(
-            self.view,
-            palette=[("reversed", "standout", "")],
-            unhandled_input=self.exit_on_q,
+            self.view, self.palette, unhandled_input=self.exit_on_q,
         )
 
         # self.loop.screen.set_terminal_properties(bright_is_bold=False)

@@ -1,4 +1,5 @@
 import subprocess
+import re
 
 
 class Cluster(object):
@@ -9,6 +10,39 @@ class Cluster(object):
 
         # self.nodes = get_nodes()
         self.partitions = None
+
+        self.config = self.get_config()
+
+    def get_config(self):
+        cmd = "ssh yarin scontrol show config"
+        process = subprocess.run(cmd.split(" "), capture_output=True)
+        o = process.stdout.decode("utf-8").splitlines()
+
+        pattern = "(\S+)\s*=(.*)"
+
+        config = {}
+        for line in o[1:]:
+            try:
+                match = re.search(pattern, line)
+                config[match.group(1)] = match.group(2)
+            except:
+                continue
+
+        return config
+
+    def get_jobs(self):
+        command = "ssh yarin squeue"
+        squeue_process = subprocess.run(command.split(" "), capture_output=True)
+
+        o = squeue_process.stdout.decode("utf-8").splitlines()
+
+        jobs = []
+        fields = o[0].split()
+        for line in o[1:]:
+            job = {k: v for k, v in zip(fields, line.split())}
+            jobs.append(Job(job))
+
+        return jobs
 
 
 class Partition(object):
@@ -40,21 +74,6 @@ class JobStep(object):
 class Node(object):
     def __init__(self):
         super().__init__()
-
-
-def get_jobs():
-    command = "ssh aoraki squeue"
-    squeue_process = subprocess.run(command.split(" "), capture_output=True)
-
-    o = squeue_process.stdout.decode("utf-8").splitlines()
-
-    jobs = []
-    fields = o[0].split()
-    for line in o[1:]:
-        job = {k: v for k, v in zip(fields, line.split())}
-        jobs.append(Job(job))
-
-    return jobs
 
 
 if __name__ == "__main__":
