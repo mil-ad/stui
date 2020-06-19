@@ -162,6 +162,8 @@ class SlurmtopApp(object):
             footer=urwid.AttrMap(self.footer, "foot"),
         )
 
+        self.j = 1 #TODO: Remove this
+
     def run(self):
 
         self.loop = urwid.MainLoop(
@@ -178,6 +180,7 @@ class SlurmtopApp(object):
         RESTORE_NORMAL_BUFFER = ESC + "[?1049l" + ESC + "8"
 
         self.loop.screen.write(SWITCH_TO_ALTERNATE_BUFFER)
+        self.register_refresh()
         self.loop.run()
         self.loop.screen.write(RESTORE_NORMAL_BUFFER)
 
@@ -185,13 +188,15 @@ class SlurmtopApp(object):
         if key in ("q", "Q"):
             raise urwid.ExitMainLoop()
 
-    # def refresh(_loop, user_data):
-    #     qpanel = queue_panel()
-    #     top_widget.contents[0] = (qpanel, top_widget.options("weight", 80))
-    #     _loop.set_alarm_in(UPDATE_INTERVAL, refresh)
+    def refresh(self, loop, user_data):
+        w = urwid.AttrMap(urwid.Text(str(self.j), align="center"), "bold")
+        w = urwid.AttrMap(w, "head")
+        self.view.contents["header"] = (w, None)
+        self.j = self.j + 1
+        self.register_refresh()
 
-    # loop.set_alarm_in(UPDATE_INTERVAL, refresh)
-
+    def register_refresh(self):
+        self.loop.set_alarm_in(UPDATE_INTERVAL, self.refresh)
 
 if __name__ == "__main__":
     SlurmtopApp().run()
