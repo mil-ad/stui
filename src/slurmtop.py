@@ -97,10 +97,20 @@ def job_context_menu():
 
 def filter_panel():
 
-    f = urwid.Pile([urwid.CheckBox("All Partitions"), urwid.CheckBox("Mine")])
+    f = urwid.Pile(
+        [
+            urwid.CheckBox("All Partitions"),
+            urwid.CheckBox("My Jobs"),
+            urwid.CheckBox("Running"),
+            urwid.Divider(),
+            urwid.Text("Job Name:"),
+            urwid.LineBox(urwid.Edit()),
+        ]
+    )
     f = urwid.Filler(f, valign="top")
 
-    options_panel = FancyLineBox(urwid.Filler(urwid.CheckBox("All")), "Options")
+    return FancyLineBox(f, "Filter")
+
 
     return FancyLineBox(f, "Options")
 
