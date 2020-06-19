@@ -181,7 +181,14 @@ class SlurmtopApp(object):
         header = urwid.Columns(
             [
                 urwid.Text("slurm-tui", align="left"),
-                urwid.Text(self.cluster.config["ClusterName"], align="center"),
+                urwid.Text(
+                    [
+                        (None, "Cluster:"),
+                        ("magenta", self.cluster.config["ClusterName"]),
+                    ],
+                    align="center",
+                ),
+                # urwid.Text(self.cluster.config["ClusterName"], align="center"),
                 self.header_time,
             ]
         )
