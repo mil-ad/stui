@@ -137,7 +137,7 @@ class Tab(object):
         super().__init__()
 
 
-class QueueTab(Tab):
+class JobsTab(Tab):
     def __init__(self, cluster):
         super().__init__()
 
@@ -177,7 +177,7 @@ class SlurmtopApp(object):
             ("bold", "bold", ""),
         ]
 
-        queue_tab = QueueTab(self.cluster)
+        jobs_tab = JobsTab(self.cluster)
 
         self.header_time = urwid.Text(datetime.now().strftime("%X"), align="right")
         header = urwid.Columns(
@@ -198,7 +198,7 @@ class SlurmtopApp(object):
 
         self.footer = urwid.Columns(
             [
-                (20, queue_tab.tab_label),
+                (20, jobs_tab.tab_label),
                 (20, TabLineBox(urwid.Text("Nodes"))),
                 (20, TabLineBox(urwid.Text("Admin"))),
                 (20, TabLineBox(urwid.Text("Settings"))),
@@ -206,7 +206,7 @@ class SlurmtopApp(object):
             dividechars=0,
         )
 
-        self.view = urwid.Frame(queue_tab.body, header=header, footer=self.footer,)
+        self.view = urwid.Frame(jobs_tab.body, header=header, footer=self.footer,)
 
     def run(self):
 
