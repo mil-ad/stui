@@ -56,7 +56,7 @@ class JobRow(urwid.Columns):
 
 def create_job_widget(job, callback):
     label = str(job)
-    button = JobRow([urwid.Text(label), urwid.Text(("key", u"running")),])
+    button = JobRow([urwid.Text(label), urwid.Text(("test_A", u"running")),])
     return urwid.AttrMap(button, None, focus_map="reversed")
 
 
@@ -102,6 +102,29 @@ def filter_panel():
     return FancyLineBox(f, "Options")
 
 
+class Tab(object):
+    def __init__(self):
+        super().__init__()
+
+
+class QueueTab(Tab):
+    def __init__(self, cluster):
+        super().__init__()
+
+        self.cluster = cluster
+
+        qpanel = queue_panel(self.cluster)
+        fpanel = filter_panel()
+
+        self.tab_label = urwid.AttrMap(
+            TabLineBox(urwid.Text(("bluebg", "Queue"))), "redbg"
+        )
+
+        self.body = urwid.Columns(
+            [("weight", 80, qpanel), ("weight", 20, fpanel)], dividechars=1
+        )
+
+
 class SlurmtopApp(object):
     def __init__(self):
         super().__init__()
@@ -110,13 +133,15 @@ class SlurmtopApp(object):
 
         # (name, foreground, background, mono, foreground_high, background_high)
         self.palette = [
-            # ("body", "black", "dark cyan", "standout"),
-            # ("foot", "light gray", "black"),
-            ("key", "light cyan,bold", "", ""),
-            # ("title", "white", "black",),
+            ("redbg", "", "light red"),
+            ("grenbg", "", "light green"),
+            ("bluebg", "", "light blue"),
+            ("test_A", "light cyan,bold", "", ""),
             ("reversed", "standout", ""),
             ("bold", "bold", ""),
         ]
+
+        queue_tab = QueueTab(self.cluster)
 
         self.header = urwid.AttrMap(
             urwid.Text(self.cluster.config["ClusterName"], align="center"), "bold"
@@ -124,24 +149,17 @@ class SlurmtopApp(object):
 
         self.footer = urwid.Columns(
             [
-                (20, TabLineBox(urwid.Text("Queue"))),
+                (20, queue_tab.tab_label),
                 (20, TabLineBox(urwid.Text("Nodes"))),
                 (20, TabLineBox(urwid.Text("Admin"))),
                 (20, TabLineBox(urwid.Text("Settings"))),
             ]
         )
 
-        qpanel = queue_panel(self.cluster)
-        fpanel = filter_panel()
-
-        self.body = urwid.Columns(
-            [("weight", 80, qpanel), ("weight", 20, fpanel)], dividechars=1
-        )
-
         self.view = urwid.Frame(
-            urwid.AttrWrap(self.body, "body"),
-            header=urwid.AttrWrap(self.header, "head"),
-            footer=urwid.AttrWrap(self.footer, "foot"),
+            urwid.AttrMap(queue_tab.body, "body"),
+            header=urwid.AttrMap(self.header, "head"),
+            footer=urwid.AttrMap(self.footer, "foot"),
         )
 
     def run(self):
