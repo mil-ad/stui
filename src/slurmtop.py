@@ -150,9 +150,15 @@ class SlurmtopApp(object):
 
         queue_tab = QueueTab(self.cluster)
 
-        self.header = urwid.AttrMap(
-            urwid.Text(self.cluster.config["ClusterName"], align="center"), "bold"
+        self.header_time = urwid.Text(datetime.now().strftime("%X"), align="right")
+        header = urwid.Columns(
+            [
+                urwid.Text("slurm-tui", align="left"),
+                urwid.Text(self.cluster.config["ClusterName"], align="center"),
+                self.header_time,
+            ]
         )
+        header = urwid.AttrMap(header, "bold")
 
         self.footer = urwid.Columns(
             [
@@ -190,13 +196,14 @@ class SlurmtopApp(object):
         if key in ("q", "Q"):
             raise urwid.ExitMainLoop()
 
-    def refresh(self, loop, user_data):
-        self.header.original_widget.set_text(str(self.j))
-        self.j += 1
+    def refresh_time(self, loop, user_data):
+        time = datetime.now().strftime("%X")
+        self.header_time.set_text(time)
         self.register_refresh()
 
     def register_refresh(self):
-        self.loop.set_alarm_in(UPDATE_INTERVAL, self.refresh)
+        self.loop.set_alarm_in(1, self.refresh_time)
+
 
 if __name__ == "__main__":
     SlurmtopApp().run()
