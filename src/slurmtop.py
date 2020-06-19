@@ -189,10 +189,8 @@ class SlurmtopApp(object):
             raise urwid.ExitMainLoop()
 
     def refresh(self, loop, user_data):
-        w = urwid.AttrMap(urwid.Text(str(self.j), align="center"), "bold")
-        w = urwid.AttrMap(w, "head")
-        self.view.contents["header"] = (w, None)
-        self.j = self.j + 1
+        self.header.original_widget.set_text(str(self.j))
+        self.j += 1
         self.register_refresh()
 
     def register_refresh(self):
