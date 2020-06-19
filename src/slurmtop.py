@@ -1,7 +1,6 @@
 from datetime import datetime
 
 import urwid
-from urwid import Text, Columns, Pile, Filler
 
 import slurm
 
@@ -64,7 +63,7 @@ def create_job_widget(job, callback):
 
 
 def queue_panel(cluster):
-    header = Columns([Text("Job ID"), Text("Foo")])
+    header = urwid.Columns([urwid.Text("Job ID"), urwid.Text("Foo")])
 
     jobs_widgets = [
         create_job_widget(job, job_context_menu) for job in cluster.get_jobs()
@@ -164,14 +163,9 @@ class SlurmtopApp(object):
 
         # (name, foreground, background, mono, foreground_high, background_high)
         self.palette = [
-            ("redbg", "", "light red"),
-            ("yellowfg", "yellow", ""),
             ("active_tab_label", "yellow,bold", ""),
-            # ("inactive_tab_label", "light gray", ""),
             ("magenta", "light magenta", ""),
             ("dark_gray", "dark gray", ""),
-            ("grenbg", "", "light green"),
-            ("bluebg", "", "light blue"),
             ("test_A", "light cyan,bold", "", ""),
             ("reversed", "standout", ""),
             ("bold", "bold", ""),
