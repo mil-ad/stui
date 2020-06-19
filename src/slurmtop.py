@@ -145,12 +145,14 @@ class QueueTab(Tab):
 
         qpanel = queue_panel(self.cluster)
         fpanel = filter_panel()
+        apanel = action_panel()
+        right_col = urwid.Pile([fpanel, apanel])
 
-        label = urwid.AttrMap(urwid.Text("Queue"), "active_tab_label")
+        label = urwid.AttrMap(urwid.Text("Jobs"), "active_tab_label")
         self.tab_label = urwid.AttrMap(TabLineBox(label), "active_tab_label")
 
         self.body = urwid.Columns(
-            [("weight", 80, qpanel), ("weight", 20, fpanel)], dividechars=1
+            [("weight", 80, qpanel), ("weight", 20, right_col)], dividechars=1
         )
 
 
