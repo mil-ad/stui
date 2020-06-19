@@ -119,9 +119,8 @@ class QueueTab(Tab):
         qpanel = queue_panel(self.cluster)
         fpanel = filter_panel()
 
-        self.tab_label = urwid.AttrMap(
-            TabLineBox(urwid.Text(("bluebg", "Queue"))), "redbg"
-        )
+        label = urwid.AttrMap(urwid.Text("Queue"), "active_tab_label")
+        self.tab_label = urwid.AttrMap(TabLineBox(label), "active_tab_label")
 
         self.body = urwid.Columns(
             [("weight", 80, qpanel), ("weight", 20, fpanel)], dividechars=1
@@ -137,6 +136,11 @@ class SlurmtopApp(object):
         # (name, foreground, background, mono, foreground_high, background_high)
         self.palette = [
             ("redbg", "", "light red"),
+            ("yellowfg", "yellow", ""),
+            ("active_tab_label", "yellow,bold", ""),
+            # ("inactive_tab_label", "light gray", ""),
+            ("magenta", "light magenta", ""),
+            ("dark_gray", "dark gray", ""),
             ("grenbg", "", "light green"),
             ("bluebg", "", "light blue"),
             ("test_A", "light cyan,bold", "", ""),
@@ -156,16 +160,11 @@ class SlurmtopApp(object):
                 (20, TabLineBox(urwid.Text("Nodes"))),
                 (20, TabLineBox(urwid.Text("Admin"))),
                 (20, TabLineBox(urwid.Text("Settings"))),
-            ]
+            ],
+            dividechars=0,
         )
 
-        self.view = urwid.Frame(
-            urwid.AttrMap(queue_tab.body, "body"),
-            header=urwid.AttrMap(self.header, "head"),
-            footer=urwid.AttrMap(self.footer, "foot"),
-        )
-
-        self.j = 1 #TODO: Remove this
+        self.view = urwid.Frame(queue_tab.body, header=header, footer=self.footer,)
 
     def run(self):
 
