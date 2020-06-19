@@ -1,5 +1,8 @@
+from datetime import datetime
+
 import urwid
 from urwid import Text, Columns, Pile, Filler
+
 import slurm
 
 UPDATE_INTERVAL = 5
