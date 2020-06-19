@@ -119,7 +119,18 @@ class SlurmtopApp(object):
             unhandled_input=self.exit_on_q,
         )
 
+        # self.loop.screen.set_terminal_properties(bright_is_bold=False)
+
+        # Current implementation of urwid uses xterm's 47 escape sequences which are not
+        # compatible with some modern terminals like alacritty. I'll do a PR to urwid
+        # at some point but in the mean time let's manually use the correct escape seq
+        ESC = "\x1b"
+        SWITCH_TO_ALTERNATE_BUFFER = ESC + "7" + ESC + "[?1049h"
+        RESTORE_NORMAL_BUFFER = ESC + "[?1049l" + ESC + "8"
+
+        self.loop.screen.write(SWITCH_TO_ALTERNATE_BUFFER)
         self.loop.run()
+        self.loop.screen.write(RESTORE_NORMAL_BUFFER)
 
     def exit_on_q(self, key):
         if key in ("q", "Q"):
