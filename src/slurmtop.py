@@ -112,7 +112,24 @@ def filter_panel():
     return FancyLineBox(f, "Filter")
 
 
-    return FancyLineBox(f, "Options")
+def action_panel():
+
+    f = urwid.Pile(
+        [
+            urwid.Text("Selected Jobs:"),
+            urwid.Button("Cancel"),
+            urwid.Button("Nice"),
+            urwid.Button("Throttle"),
+            urwid.Divider(),
+            urwid.Text("All My Jobs:"),
+            urwid.Button("Cancel All"),
+            urwid.Button("Cancel Newest"),
+            urwid.Button("Cancel Oldest"),
+        ]
+    )
+    f = urwid.Filler(f, valign="top")
+
+    return FancyLineBox(f, "Actions")
 
 
 class Tab(object):
