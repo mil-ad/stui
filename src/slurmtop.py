@@ -4,11 +4,18 @@ import urwid
 
 import slurm
 
-UPDATE_INTERVAL = 5
+UPDATE_INTERVAL = 1
 
 
 class FancyLineBox(urwid.LineBox):
     def __init__(self, original_widget, title):
+
+        original_widget = urwid.Padding(original_widget, left=1, right=1)
+        # FIXME: I don't know why I should pass height here
+        # original_widget = urwid.Filler(
+        #     original_widget, height=("relative", 100), top=1, bottom=0
+        # )
+
         super().__init__(
             original_widget,
             title,
@@ -60,18 +67,6 @@ def create_job_widget(job, callback):
     label = str(job)
     button = JobRow([urwid.Text(label), urwid.Text(("test_A", u"running")),])
     return urwid.AttrMap(button, None, focus_map="reversed")
-
-
-def queue_panel(cluster):
-    header = urwid.Columns([urwid.Text("Job ID"), urwid.Text("Foo")])
-
-    jobs_widgets = [
-        create_job_widget(job, job_context_menu) for job in cluster.get_jobs()
-    ]
-
-    return FancyLineBox(
-        urwid.ListBox(urwid.SimpleFocusListWalker(jobs_widgets)), "Queue",
-    )
 
 
 def job_context_menu():
@@ -142,7 +137,7 @@ class JobsTab(Tab):
 
         self.cluster = cluster
 
-        qpanel = queue_panel(self.cluster)
+        self.qpanel = self.queue_panel()
         fpanel = filter_panel()
         apanel = action_panel()
         right_col = urwid.Pile([fpanel, apanel])
@@ -151,8 +146,30 @@ class JobsTab(Tab):
         self.tab_label = urwid.AttrMap(TabLineBox(label), "active_tab_label")
 
         self.body = urwid.Columns(
-            [("weight", 80, qpanel), ("weight", 20, right_col)], dividechars=1
+            [("weight", 80, self.qpanel), ("weight", 20, right_col)], dividechars=1
         )
+
+    def queue_panel(self):
+        # header = urwid.Columns([urwid.Text("Job ID"), urwid.Text("Foo")])
+
+        jobs_widgets = [
+            create_job_widget(job, job_context_menu) for job in self.cluster.get_jobs()
+        ]
+
+        self.walker = urwid.SimpleFocusListWalker(jobs_widgets)
+
+        return FancyLineBox(urwid.ListBox(self.walker), "Queue",)
+
+    def refresh(self):
+
+        # jobs_widgets = [
+        #     create_job_widget(job, job_context_menu) for job in self.cluster.get_jobs()
+        # ]
+
+        # self.walker = urwid.SimpleFocusListWalker(jobs_widgets)
+
+        # self.walker.append(create_job_widget("new_job", job_context_menu))
+        pass
 
 
 class SlurmtopApp(object):
@@ -171,7 +188,7 @@ class SlurmtopApp(object):
             ("bold", "bold", ""),
         ]
 
-        jobs_tab = JobsTab(self.cluster)
+        self.jobs_tab = JobsTab(self.cluster)
 
         self.header_time = urwid.Text(datetime.now().strftime("%X"), align="right")
         header = urwid.Columns(
@@ -192,15 +209,14 @@ class SlurmtopApp(object):
 
         self.footer = urwid.Columns(
             [
-                (20, jobs_tab.tab_label),
+                (20, self.jobs_tab.tab_label),
                 (20, TabLineBox(urwid.Text("Nodes"))),
                 (20, TabLineBox(urwid.Text("Admin"))),
-                (20, TabLineBox(urwid.Text("Settings"))),
             ],
             dividechars=0,
         )
 
-        self.view = urwid.Frame(jobs_tab.body, header=header, footer=self.footer,)
+        self.view = urwid.Frame(self.jobs_tab.body, header=header, footer=self.footer,)
 
     def run(self):
 
@@ -229,10 +245,12 @@ class SlurmtopApp(object):
     def refresh_time(self, loop, user_data):
         time = datetime.now().strftime("%X")
         self.header_time.set_text(time)
+
+        self.jobs_tab.refresh()
         self.register_refresh()
 
     def register_refresh(self):
-        self.loop.set_alarm_in(1, self.refresh_time)
+        self.loop.set_alarm_in(UPDATE_INTERVAL, self.refresh_time)
 
 
 if __name__ == "__main__":
