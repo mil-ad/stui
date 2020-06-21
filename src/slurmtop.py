@@ -173,6 +173,30 @@ class JobsTab(Tab):
         pass
 
 
+class NodesTab(Tab):
+    def __init__(self, cluster):
+        super().__init__()
+
+        self.cluster = cluster
+
+        w = urwid.Text("Under Construction ...")
+        w = urwid.Filler(w)
+
+        self.view = FancyLineBox(w, "Nodes")
+
+
+class AdminsTab(Tab):
+    def __init__(self, cluster):
+        super().__init__()
+
+        self.cluster = cluster
+
+        w = urwid.Text("Under Construction ...")
+        w = urwid.Filler(w)
+
+        self.view = FancyLineBox(w, "Admin")
+
+
 class SlurmtopApp(object):
     def __init__(self, args):
         super().__init__()
