@@ -146,7 +146,7 @@ class JobsTab(Tab):
         label = urwid.AttrMap(urwid.Text("Jobs"), "active_tab_label")
         self.tab_label = urwid.AttrMap(TabLineBox(label), "active_tab_label")
 
-        self.body = urwid.Columns(
+        self.view = urwid.Columns(
             [("weight", 80, self.qpanel), ("weight", 20, right_col)], dividechars=1
         )
 
@@ -214,6 +214,8 @@ class SlurmtopApp(object):
         ]
 
         self.jobs_tab = JobsTab(self.cluster)
+        self.nodes_tab = NodesTab(self.cluster)
+        self.admin_tab = AdminsTab(self.cluster)
 
         self.header_time = urwid.Text(datetime.now().strftime("%X"), align="right")
         header = urwid.Columns(
@@ -241,7 +243,7 @@ class SlurmtopApp(object):
             dividechars=0,
         )
 
-        self.view = urwid.Frame(self.jobs_tab.body, header=header, footer=self.footer,)
+        self.view = urwid.Frame(self.jobs_tab.view, header=header, footer=self.footer,)
 
     def run(self):
 
