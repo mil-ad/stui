@@ -3,8 +3,10 @@ import re
 
 
 class Cluster(object):
-    def __init__(self):
+    def __init__(self, remote):
         super().__init__()
+
+        self.remote = remote
 
         self.me = None
 
@@ -13,10 +15,17 @@ class Cluster(object):
 
         self.config = self.get_config()
 
-    def get_config(self):
-        cmd = "ssh yarin scontrol show config"
+    def run_command(self, cmd: str):
+        if self.remote:
+            cmd = " ".join(["ssh", self.remote, cmd])
+
         process = subprocess.run(cmd.split(" "), capture_output=True)
         o = process.stdout.decode("utf-8").splitlines()
+
+        return o
+
+    def get_config(self):
+        o = self.run_command("scontrol show config")
 
         pattern = "(\S+)\s*=(.*)"
 
@@ -31,10 +40,7 @@ class Cluster(object):
         return config
 
     def get_jobs(self):
-        command = "ssh yarin squeue"
-        squeue_process = subprocess.run(command.split(" "), capture_output=True)
-
-        o = squeue_process.stdout.decode("utf-8").splitlines()
+        o = self.run_command("squeue")
 
         jobs = []
         fields = o[0].split()

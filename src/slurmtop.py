@@ -1,3 +1,4 @@
+import argparse
 from datetime import datetime
 
 import urwid
@@ -173,10 +174,10 @@ class JobsTab(Tab):
 
 
 class SlurmtopApp(object):
-    def __init__(self):
+    def __init__(self, args):
         super().__init__()
 
-        self.cluster = slurm.Cluster()
+        self.cluster = slurm.Cluster(args.remote)
 
         # (name, foreground, background, mono, foreground_high, background_high)
         self.palette = [
@@ -253,5 +254,20 @@ class SlurmtopApp(object):
         self.loop.set_alarm_in(UPDATE_INTERVAL, self.refresh_time)
 
 
+def parse_args():
+    parser = argparse.ArgumentParser(description="slurm-tui")
+
+    parser.add_argument(
+        "--remote",
+        default=None,
+        help="Remote destination where slurm controller is running. Format: --remote {Host name defined in ssh config} or --remote {username@server}. Does _not_ prompt for password and relies on ssh-keys for authentication.",
+    )
+
+    args = parser.parse_args()
+
+    return args
+
+
 if __name__ == "__main__":
-    SlurmtopApp().run()
+    args = parse_args()
+    SlurmtopApp(args).run()
