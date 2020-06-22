@@ -68,10 +68,10 @@ class Tab(urwid.WidgetWrap):
         self.set_active_prev_fn = set_active_prev_fn
 
         w = urwid.Text(label)
+        w = urwid.AttrMap(w, None, focus_map="focus_and_inactive_tab_label")
+        self.text_attrmap = w
         w = TabLineBox(w)
-        w = urwid.AttrMap(
-            w, attr_map="inactive_tab_label", focus_map="active_tab_label"
-        )
+        w = urwid.AttrMap(w, attr_map="inactive_tab_label")
         super().__init__(w)
 
     def selectable(self):
@@ -95,6 +95,14 @@ class Tab(urwid.WidgetWrap):
         if button == 1:
             self.set_active_fn(self)
 
+    def set_attr_active(self):
+        self._w.set_attr_map({None: "active_tab_label"})
+        self.text_attrmap.set_focus_map({None: "focus_and_active_tab_label"})
+
+    def set_attr_inactive(self):
+        self._w.set_attr_map({None: "inactive_tab_label"})
+        self.text_attrmap.set_focus_map({None: "focus_and_inactive_tab_label"})
+
 
 class Tabbed(urwid.WidgetWrap):
     def __init__(self, tabs):
@@ -117,11 +125,18 @@ class Tabbed(urwid.WidgetWrap):
         w = urwid.Pile((("weight", 1, empty_body), ("pack", self.tab_bar)))
         super().__init__(w)
 
+        self.set_active_tab(self.tabs[0])
+
     def set_active_tab(self, tab):
         current_options = self._w.contents[0][1]
         self._w.contents[0] = (tab.view, current_options)
 
         self.tab_bar.focus_position = self.tabs.index(tab)
+        for t in self.tabs:
+            if t is tab:
+                t.set_attr_active()
+            else:
+                t.set_attr_inactive()
 
     def set_active_next(self):
         next_idx = (self.tab_bar.focus_position + 1) % len(self.tabs)
@@ -287,7 +302,9 @@ class SlurmtopApp(object):
 
         # (name, foreground, background, mono, foreground_high, background_high)
         self.palette = [
-            ("active_tab_label", "yellow,bold", ""),
+            ("active_tab_label", "yellow", ""),
+            ("focus_and_active_tab_label", "yellow,underline", ""),
+            ("focus_and_inactive_tab_label", "underline", ""),
             ("inactive_tab_label", "", ""),
             ("disabled_tab_label", "dark gray", ""),
             ("magenta", "light magenta", ""),
@@ -295,6 +312,7 @@ class SlurmtopApp(object):
             ("test_A", "light cyan,bold", "", ""),
             ("reversed", "standout", ""),
             ("bold", "bold", ""),
+            ("underline", "underline", ""),
         ]
 
         self.header_time = urwid.Text(datetime.now().strftime("%X"), align="right")
