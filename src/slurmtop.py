@@ -5,7 +5,7 @@ import urwid
 
 import slurm
 
-UPDATE_INTERVAL = 1
+UPDATE_INTERVAL = 10
 
 
 class FancyLineBox(urwid.LineBox):
@@ -31,6 +31,14 @@ class FancyLineBox(urwid.LineBox):
             rline="│",
         )
 
+class FancyCheckBox(urwid.CheckBox):
+    states = {
+        # ☐☒▣▢✓✘
+        True: urwid.SelectableIcon("[✘]", 1),
+        False: urwid.SelectableIcon("[ ]", 1),
+        'mixed': urwid.SelectableIcon("[-]", 1) }
+    reserve_columns = 4
+
 
 class TabLineBox(urwid.LineBox):
     def __init__(self, original_widget):
@@ -46,6 +54,85 @@ class TabLineBox(urwid.LineBox):
             lline="│",
             rline="│",
         )
+
+
+class Tab(urwid.WidgetWrap):
+    def __init__(
+        self, label, view, set_active_fn, set_active_next_fn, set_active_prev_fn
+    ):
+
+        self.view = view
+
+        self.set_active_fn = set_active_fn
+        self.set_active_next_fn = set_active_next_fn
+        self.set_active_prev_fn = set_active_prev_fn
+
+        w = urwid.Text(label)
+        w = TabLineBox(w)
+        w = urwid.AttrMap(
+            w, attr_map="inactive_tab_label", focus_map="active_tab_label"
+        )
+        super().__init__(w)
+
+    def selectable(self):
+        return True
+
+    def pack(self, size, focus=False):
+        return (15, 2)
+
+    def keypress(self, size, key):
+
+        if key == "enter":
+            self.set_active_fn(self)
+        elif key == "tab":
+            self.set_active_next_fn()
+        elif key == "shift tab":
+            self.set_active_prev_fn()
+        else:
+            return key
+
+    def mouse_event(self, size, event, button, col, row, focus):
+        if button == 1:
+            self.set_active_fn(self)
+
+
+class Tabbed(urwid.WidgetWrap):
+    def __init__(self, tabs):
+
+        self.tabs = [
+            Tab(
+                label,
+                view,
+                self.set_active_tab,
+                self.set_active_next,
+                self.set_active_prev,
+            )
+            for label, view in tabs
+        ]
+
+        self.tab_bar = urwid.Columns([("pack", t) for t in self.tabs], dividechars=0)
+
+        empty_body = urwid.Filler(urwid.Text("test"))
+        empty_body = self.tabs[0].view
+        w = urwid.Pile((("weight", 1, empty_body), ("pack", self.tab_bar)))
+        super().__init__(w)
+
+    def set_active_tab(self, tab):
+        current_options = self._w.contents[0][1]
+        self._w.contents[0] = (tab.view, current_options)
+
+        self.tab_bar.focus_position = self.tabs.index(tab)
+
+    def set_active_next(self):
+        next_idx = (self.tab_bar.focus_position + 1) % len(self.tabs)
+        self.set_active_tab(self.tabs[next_idx])
+
+    def set_active_prev(self):
+        next_idx = (self.tab_bar.focus_position - 1) % len(self.tabs)
+        self.set_active_tab(self.tabs[next_idx])
+
+    def active_tab_idx(self):
+        return self.tabs.index(self._w.contents[0])
 
 
 class JobText(urwid.Text):
@@ -94,15 +181,15 @@ def filter_panel():
 
     f = urwid.Pile(
         [
-            urwid.CheckBox("All Partitions"),
-            urwid.CheckBox("My Jobs"),
-            urwid.CheckBox("Running"),
+            FancyCheckBox("All Partitions"),
+            FancyCheckBox("My Jobs"),
+            FancyCheckBox("Running"),
             urwid.Divider(),
             urwid.Text("Job Name:"),
             urwid.LineBox(urwid.Edit()),
         ]
     )
-    f = urwid.Filler(f, valign="top")
+    # f = urwid.Filler(f, valign="top")
 
     return FancyLineBox(f, "Filter")
 
@@ -127,12 +214,7 @@ def action_panel():
     return FancyLineBox(f, "Actions")
 
 
-class Tab(object):
-    def __init__(self):
-        super().__init__()
-
-
-class JobsTab(Tab):
+class JobsTab(object):
     def __init__(self, cluster):
         super().__init__()
 
@@ -141,10 +223,10 @@ class JobsTab(Tab):
         self.qpanel = self.queue_panel()
         fpanel = filter_panel()
         apanel = action_panel()
-        right_col = urwid.Pile([fpanel, apanel])
+        right_col = urwid.Pile([("pack", fpanel), apanel])
 
-        label = urwid.AttrMap(urwid.Text("Jobs"), "active_tab_label")
-        self.tab_label = urwid.AttrMap(TabLineBox(label), "active_tab_label")
+        # label = urwid.AttrMap(urwid.Text("Jobs"), "active_tab_label")
+        # self.tab_label = urwid.AttrMap(TabLineBox(label), "active_tab_label")
 
         self.view = urwid.Columns(
             [("weight", 80, self.qpanel), ("weight", 20, right_col)], dividechars=1
@@ -173,25 +255,25 @@ class JobsTab(Tab):
         pass
 
 
-class NodesTab(Tab):
+class NodesTab(object):
     def __init__(self, cluster):
         super().__init__()
 
         self.cluster = cluster
 
-        w = urwid.Text("Under Construction ...")
+        w = urwid.Text("Nodes: Under Construction ...")
         w = urwid.Filler(w)
 
         self.view = FancyLineBox(w, "Nodes")
 
 
-class AdminsTab(Tab):
+class AdminsTab(object):
     def __init__(self, cluster):
         super().__init__()
 
         self.cluster = cluster
 
-        w = urwid.Text("Under Construction ...")
+        w = urwid.Text("Admin: Under Construction ...")
         w = urwid.Filler(w)
 
         self.view = FancyLineBox(w, "Admin")
@@ -206,16 +288,14 @@ class SlurmtopApp(object):
         # (name, foreground, background, mono, foreground_high, background_high)
         self.palette = [
             ("active_tab_label", "yellow,bold", ""),
+            ("inactive_tab_label", "", ""),
+            ("disabled_tab_label", "dark gray", ""),
             ("magenta", "light magenta", ""),
             ("dark_gray", "dark gray", ""),
             ("test_A", "light cyan,bold", "", ""),
             ("reversed", "standout", ""),
             ("bold", "bold", ""),
         ]
-
-        self.jobs_tab = JobsTab(self.cluster)
-        self.nodes_tab = NodesTab(self.cluster)
-        self.admin_tab = AdminsTab(self.cluster)
 
         self.header_time = urwid.Text(datetime.now().strftime("%X"), align="right")
         header = urwid.Columns(
@@ -234,16 +314,19 @@ class SlurmtopApp(object):
         )
         header = urwid.AttrMap(header, "bold")
 
-        self.footer = urwid.Columns(
+        self.jobs_tab = JobsTab(self.cluster)
+        self.nodes_tab = NodesTab(self.cluster)
+        self.admin_tab = AdminsTab(self.cluster)
+
+        tabbed = Tabbed(
             [
-                (20, self.jobs_tab.tab_label),
-                (20, TabLineBox(urwid.Text("Nodes"))),
-                (20, TabLineBox(urwid.Text("Admin"))),
-            ],
-            dividechars=0,
+                ("Jobs", self.jobs_tab.view),
+                ("Nodes", self.nodes_tab.view),
+                ("Admin", self.admin_tab.view),
+            ]
         )
 
-        self.view = urwid.Frame(self.jobs_tab.view, header=header, footer=self.footer,)
+        self.view = urwid.Frame(tabbed, header)
 
     def run(self):
 
@@ -272,8 +355,8 @@ class SlurmtopApp(object):
     def refresh_time(self, loop, user_data):
         time = datetime.now().strftime("%X")
         self.header_time.set_text(time)
-
-        self.jobs_tab.refresh()
+        # self.jobs_tab.refresh()
+        # self.view.contents["body"] = (self.nodes_tab.view, None)  # TODO
         self.register_refresh()
 
     def register_refresh(self):

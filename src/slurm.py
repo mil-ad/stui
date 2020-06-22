@@ -1,10 +1,17 @@
 import subprocess
 import re
+import shutil
 
 
 class Cluster(object):
     def __init__(self, remote):
         super().__init__()
+
+        if not remote:
+            if shutil.which("sinfo") is None:
+                raise SystemExit("Slurm binaries not found.")
+        else:
+            pass
 
         self.remote = remote
 
