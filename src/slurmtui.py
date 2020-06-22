@@ -84,7 +84,7 @@ class Tab(urwid.WidgetWrap):
 
     def keypress(self, size, key):
 
-        if key == "enter":
+        if key == "enter" or key == " ":
             self.set_active_fn(self)
         elif key == "tab":
             self.set_active_next_fn()
