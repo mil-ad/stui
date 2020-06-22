@@ -31,12 +31,14 @@ class FancyLineBox(urwid.LineBox):
             rline="│",
         )
 
+
 class FancyCheckBox(urwid.CheckBox):
     states = {
         # ☐☒▣▢✓✘
         True: urwid.SelectableIcon("[✘]", 1),
         False: urwid.SelectableIcon("[ ]", 1),
-        'mixed': urwid.SelectableIcon("[-]", 1) }
+        "mixed": urwid.SelectableIcon("[-]", 1),
+    }
     reserve_columns = 4
 
 
