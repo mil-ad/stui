@@ -3,7 +3,7 @@ from setuptools import setup, find_packages
 with open("README.md", "r") as fh:
     readme = fh.read()
 
-packages=find_packages()
+packages = find_packages()
 print(packages)
 
 setup(
@@ -18,7 +18,7 @@ setup(
     author_email="milad@mil.ad",
     classifiers=[
         "Intended Audience :: Developers",
-        "License :: OSI Approved :: MIT License"
+        "License :: OSI Approved :: MIT License",
     ],
     install_requires=["urwid"],
     python_requires=">=3.6",

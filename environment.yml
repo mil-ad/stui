@@ -32,4 +32,3 @@ dependencies:
   - zlib=1.2.11=h7b6447c_3
   - pip:
     - urwid==2.1.0
-prefix: /home/milad/workspace/miniconda3/envs/slurmtop
