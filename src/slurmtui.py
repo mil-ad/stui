@@ -82,6 +82,32 @@ class Fancy2Button(urwid.WidgetWrap):
         return self._hidden_btn.mouse_event(*args, **kw)
 
 
+class SpinButton(urwid.WidgetWrap):
+    def __init__(self, min, max, start, step, label=None):
+
+        w = urwid.Edit()
+        self.text = w
+        w = urwid.LineBox(w)
+
+        self.plus = Fancy2Button("+", padding_len=0)
+        self.minus = Fancy2Button("-", padding_len=0)
+
+        plus = urwid.AttrMap(self.plus, "", "active_tab_label")
+        minus = urwid.AttrMap(self.minus, "", "active_tab_label")
+
+        cols = [w, (3, plus), (3, minus)]
+
+        if label is not None:
+            l = urwid.Text(
+                "\n" + label + " "
+            )  # FIXME: Remove the \n hack. Not sure why Filler doesn't work
+            # l = urwid.Filler(l, height=3)
+            cols = [("pack", l)] + cols
+
+        w = urwid.Columns(cols)
+        super().__init__(w)
+
+
 class TabLineBox(urwid.LineBox):
     def __init__(self, original_widget):
         super().__init__(
