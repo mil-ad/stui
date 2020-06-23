@@ -285,6 +285,7 @@ def action_panel():
 
     f = urwid.Pile(
         [
+            urwid.Divider(),
             urwid.Text("Selected Job(s):"),
             SpinButton(min=None, max=None, start=" ", step=1, label="Nice:"),
             SpinButton(min=1, max=None, start=" ", step=1, label="Throttle:"),
@@ -293,7 +294,7 @@ def action_panel():
             urwid.Text("All My Jobs:"),
             urwid.Padding(Fancy2Button("Cancel All"), width="pack"),
             urwid.Padding(Fancy2Button("Cancel Newest"), width="pack"),
-            urwid.Padding(Fancy2Button("Cancel Latest"), width="pack"),
+            urwid.Padding(Fancy2Button("Cancel Oldest"), width="pack"),
         ]
     )
     f = urwid.Filler(f, valign="top")
@@ -332,14 +333,16 @@ class JobsTab(object):
 
     def refresh(self):
 
-        # jobs_widgets = [
-        #     create_job_widget(job, job_context_menu) for job in self.cluster.get_jobs()
-        # ]
+        jobs_widgets = [
+            create_job_widget(job, job_context_menu) for job in self.cluster.get_jobs()
+        ]
+
+        self.walker[:] = jobs_widgets
 
         # self.walker = urwid.SimpleFocusListWalker(jobs_widgets)
 
         # self.walker.append(create_job_widget("new_job", job_context_menu))
-        pass
+        # pass
 
 
 class NodesTab(object):
@@ -407,6 +410,9 @@ class AppWidget(urwid.WidgetWrap):
         time = datetime.now().strftime("%X")
         self.header_time.set_text(time)
 
+    def refresh_jobs(self):
+        self.jobs_tab.refresh()
+
 
 class SlurmtopApp(object):
     def __init__(self, args):
@@ -458,8 +464,7 @@ class SlurmtopApp(object):
 
     def refresh_time(self, loop, user_data):
         self.w.update_time()
-        # self.jobs_tab.refresh()
-        # self.view.contents["body"] = (self.nodes_tab.view, None)  # TODO
+        self.w.refresh_jobs()
         self.register_refresh()
 
     def register_refresh(self):
