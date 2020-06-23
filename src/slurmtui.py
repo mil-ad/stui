@@ -56,9 +56,9 @@ class Fancy1Button(urwid.WidgetWrap):
 
 
 class Fancy2Button(urwid.WidgetWrap):
-    def __init__(self, label, on_press=None, user_data=None):
-        padding = " "
-        border = "─" * (len(label) + len(padding) * 2)
+    def __init__(self, label, on_press=None, user_data=None, padding_len=1):
+        padding = " " * padding_len
+        border = "─" * (len(label) + padding_len * 2)
         # cursor_position = len(border) + padding_size
 
         w = urwid.Text(
