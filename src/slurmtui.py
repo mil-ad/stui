@@ -42,6 +42,14 @@ class FancyCheckBox(urwid.CheckBox):
     reserve_columns = 4
 
 
+class FancyButton(urwid.WidgetWrap):
+    def __init__(self, label, on_press=None, user_data=None):
+
+        w = urwid.Text(label, "center")
+        w = FancyLineBox(w, title="")
+        super().__init__(w)
+
+
 class TabLineBox(urwid.LineBox):
     def __init__(self, original_widget):
         super().__init__(
@@ -124,7 +132,7 @@ class Tabbed(urwid.WidgetWrap):
 
         empty_body = urwid.Filler(urwid.Text("test"))
         empty_body = self.tabs[0].view
-        w = urwid.Pile((("weight", 1, empty_body), ("pack", self.tab_bar)))
+        w = urwid.Pile([("weight", 1, empty_body), ("pack", self.tab_bar)])
         super().__init__(w)
 
         self.set_active_tab(self.tabs[0])
@@ -216,14 +224,14 @@ def action_panel():
     f = urwid.Pile(
         [
             urwid.Text("Selected Jobs:"),
-            urwid.Button("Cancel"),
-            urwid.Button("Nice"),
-            urwid.Button("Throttle"),
+            FancyButton("Cancel"),
+            FancyButton("Nice"),
+            FancyButton("Throttle"),
             urwid.Divider(),
             urwid.Text("All My Jobs:"),
-            urwid.Button("Cancel All"),
-            urwid.Button("Cancel Newest"),
-            urwid.Button("Cancel Oldest"),
+            FancyButton("Cancel All"),
+            FancyButton("Cancel Newest"),
+            FancyButton("Cancel Oldest"),
         ]
     )
     f = urwid.Filler(f, valign="top")
@@ -347,6 +355,7 @@ class SlurmtopApp(object):
         )
 
         self.view = urwid.Frame(tabbed, header)
+        # self.view = urwid.Pile([("pack", header), tabbed])
 
     def run(self):
 
