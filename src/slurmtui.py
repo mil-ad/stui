@@ -264,11 +264,15 @@ def filter_panel():
 
     f = urwid.Pile(
         [
+            urwid.Divider(),
             FancyCheckBox("All Partitions"),
             FancyCheckBox("My Jobs"),
             FancyCheckBox("Running"),
             urwid.Divider(),
             urwid.Text("Job Name:"),
+            urwid.LineBox(urwid.Edit()),
+            urwid.Divider(),
+            urwid.Text("Node Name:"),
             urwid.LineBox(urwid.Edit()),
         ]
     )
@@ -281,10 +285,10 @@ def action_panel():
 
     f = urwid.Pile(
         [
-            urwid.Text("Selected Jobs:"),
+            urwid.Text("Selected Job(s):"),
+            SpinButton(min=None, max=None, start=" ", step=1, label="Nice:"),
+            SpinButton(min=1, max=None, start=" ", step=1, label="Throttle:"),
             urwid.Padding(Fancy2Button("Cancel"), width="pack"),
-            urwid.Padding(Fancy2Button("Nice"), width="pack"),
-            urwid.Padding(Fancy2Button("Throttle"), width="pack"),
             urwid.Divider(),
             urwid.Text("All My Jobs:"),
             urwid.Padding(Fancy2Button("Cancel All"), width="pack"),
