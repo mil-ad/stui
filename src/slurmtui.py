@@ -42,12 +42,44 @@ class FancyCheckBox(urwid.CheckBox):
     reserve_columns = 4
 
 
-class FancyButton(urwid.WidgetWrap):
+class Fancy1Button(urwid.WidgetWrap):
     def __init__(self, label, on_press=None, user_data=None):
 
         w = urwid.Text(label, "center")
         w = FancyLineBox(w, title="")
+        # w = urwid.Padding(w, "center", "pack")
+        # w = urwid.AttrMap(w, "highlight")
         super().__init__(w)
+
+    def selectable(self):
+        return True
+
+
+class Fancy2Button(urwid.WidgetWrap):
+    def __init__(self, label, on_press=None, user_data=None):
+        padding = " "
+        border = "─" * (len(label) + len(padding) * 2)
+        # cursor_position = len(border) + padding_size
+
+        w = urwid.Text(
+            "╭" + border + "╮\n│" + padding + label + padding + "│\n╰" + border + "╯"
+        )
+        w = urwid.AttrMap(w, "", "active_tab_label")
+
+        # here is a lil hack: use a hidden button for evt handling
+        # TODO:
+        self._hidden_btn = urwid.Button("hidden %s" % label, on_press, user_data)
+
+        super().__init__(w)
+
+    def selectable(self):
+        return True
+
+    def keypress(self, *args, **kw):
+        return self._hidden_btn.keypress(*args, **kw)
+
+    def mouse_event(self, *args, **kw):
+        return self._hidden_btn.mouse_event(*args, **kw)
 
 
 class TabLineBox(urwid.LineBox):
@@ -224,14 +256,14 @@ def action_panel():
     f = urwid.Pile(
         [
             urwid.Text("Selected Jobs:"),
-            FancyButton("Cancel"),
-            FancyButton("Nice"),
-            FancyButton("Throttle"),
+            urwid.Padding(Fancy2Button("Cancel"), width="pack"),
+            urwid.Padding(Fancy2Button("Nice"), width="pack"),
+            urwid.Padding(Fancy2Button("Throttle"), width="pack"),
             urwid.Divider(),
             urwid.Text("All My Jobs:"),
-            FancyButton("Cancel All"),
-            FancyButton("Cancel Newest"),
-            FancyButton("Cancel Oldest"),
+            urwid.Padding(Fancy2Button("Cancel All"), width="pack"),
+            urwid.Padding(Fancy2Button("Cancel Newest"), width="pack"),
+            urwid.Padding(Fancy2Button("Cancel Latest"), width="pack"),
         ]
     )
     f = urwid.Filler(f, valign="top")
@@ -304,26 +336,10 @@ class AdminsTab(object):
         self.view = FancyLineBox(w, "Admin")
 
 
-class SlurmtopApp(object):
-    def __init__(self, args):
-        super().__init__()
+class AppWidget(urwid.WidgetWrap):
+    def __init__(self, cluster):
 
-        self.cluster = slurm.Cluster(args.remote)
-
-        # (name, foreground, background, mono, foreground_high, background_high)
-        self.palette = [
-            ("active_tab_label", "yellow", ""),
-            ("focus_and_active_tab_label", "yellow,underline", ""),
-            ("focus_and_inactive_tab_label", "underline", ""),
-            ("inactive_tab_label", "", ""),
-            ("disabled_tab_label", "dark gray", ""),
-            ("magenta", "light magenta", ""),
-            ("dark_gray", "dark gray", ""),
-            ("test_A", "light cyan,bold", "", ""),
-            ("reversed", "standout", ""),
-            ("bold", "bold", ""),
-            ("underline", "underline", ""),
-        ]
+        self.cluster = cluster
 
         self.header_time = urwid.Text(datetime.now().strftime("%X"), align="right")
         header = urwid.Columns(
@@ -354,13 +370,42 @@ class SlurmtopApp(object):
             ]
         )
 
-        self.view = urwid.Frame(tabbed, header)
-        # self.view = urwid.Pile([("pack", header), tabbed])
+        w = urwid.Frame(tabbed, header)
+        super().__init__(w)
+
+    def update_time(self):
+        time = datetime.now().strftime("%X")
+        self.header_time.set_text(time)
+
+
+class SlurmtopApp(object):
+    def __init__(self, args):
+        super().__init__()
+
+        self.cluster = slurm.Cluster(args.remote)
+
+        # (name, foreground, background, mono, foreground_high, background_high)
+        self.palette = [
+            ("active_tab_label", "yellow", ""),
+            ("focus_and_active_tab_label", "yellow,underline", ""),
+            ("focus_and_inactive_tab_label", "underline", ""),
+            ("inactive_tab_label", "", ""),
+            ("disabled_tab_label", "dark gray", ""),
+            ("magenta", "light magenta", ""),
+            ("dark_gray", "dark gray", ""),
+            ("test_A", "light cyan,bold", "", ""),
+            ("reversed", "standout", ""),
+            ("bold", "bold", ""),
+            ("underline", "underline", ""),
+            ("highlight", "black", "dark blue"),
+        ]
+
+        self.w = AppWidget(self.cluster)
 
     def run(self):
 
         self.loop = urwid.MainLoop(
-            self.view, self.palette, unhandled_input=self.exit_on_q,
+            self.w, self.palette, unhandled_input=self.exit_on_q,
         )
 
         # self.loop.screen.set_terminal_properties(bright_is_bold=False)
@@ -382,8 +427,7 @@ class SlurmtopApp(object):
             raise urwid.ExitMainLoop()
 
     def refresh_time(self, loop, user_data):
-        time = datetime.now().strftime("%X")
-        self.header_time.set_text(time)
+        self.w.update_time()
         # self.jobs_tab.refresh()
         # self.view.contents["body"] = (self.nodes_tab.view, None)  # TODO
         self.register_refresh()
