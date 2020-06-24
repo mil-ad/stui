@@ -317,9 +317,6 @@ class JobsTab(object):
         apanel = action_panel()
         right_col = urwid.Pile([("pack", fpanel), apanel])
 
-        # label = urwid.AttrMap(urwid.Text("Jobs"), "active_tab_label")
-        # self.tab_label = urwid.AttrMap(TabLineBox(label), "active_tab_label")
-
         self.view = urwid.Columns(
             [("weight", 80, self.qpanel), ("weight", 20, right_col)], dividechars=1
         )
