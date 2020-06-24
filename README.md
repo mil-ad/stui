@@ -4,10 +4,10 @@
 [![Follow @notmilad](https://img.shields.io/twitter/follow/notmilad?style=social)](https://twitter.com/notmilad)
 <!-- [![License: MIT](https://img.shields.io/github/license/mi-lad/torchquant_private)](https://opensource.org/licenses/MIT) -->
 
-# slurmtop
+# stui
+
+A Slurm client for the terminal written in Python.
 
 ```
-$ git clone https://github.com/mi-lad/slurmtop.git
-$ cd slurmtop
-$ pip install -e .
+$ pip install --index-url https://test.pypi.org/simple/ --no-deps stui-mil-ad
 ```
