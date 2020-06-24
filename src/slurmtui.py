@@ -3,7 +3,7 @@ from datetime import datetime
 
 import urwid
 
-import slurm
+import backend
 
 UPDATE_INTERVAL = 10
 
@@ -422,7 +422,7 @@ class SlurmtopApp(object):
     def __init__(self, args):
         super().__init__()
 
-        self.cluster = slurm.Cluster(args.remote)
+        self.cluster = backend.Cluster(args.remote)
 
         # (name, foreground, background, mono, foreground_high, background_high)
         self.palette = [
