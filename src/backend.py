@@ -32,6 +32,7 @@ class Cluster(object):
         return o
 
     def get_config(self):
+        return {"ClusterName": "foo"}
         o = self.run_command("scontrol show config")
 
         pattern = "(\S+)\s*=(.*)"
@@ -47,6 +48,7 @@ class Cluster(object):
         return config
 
     def get_jobs(self):
+        return {"foo":"foo"}
         o = self.run_command("squeue")
 
         jobs = []
