@@ -85,9 +85,11 @@ class Fancy2Button(urwid.WidgetWrap):
 class SpinButton(urwid.WidgetWrap):
     def __init__(self, min, max, start, step, label=None):
 
-        w = urwid.Edit()
+        # w = urwid.Edit()
+        w = urwid.Text("")
         self.text = w
         w = urwid.LineBox(w)
+        w = urwid.AttrMap(w, "disabled_tab_label")
 
         self.plus = Fancy2Button("+", padding_len=0)
         self.minus = Fancy2Button("-", padding_len=0)
@@ -102,7 +104,7 @@ class SpinButton(urwid.WidgetWrap):
                 "\n" + label + " "
             )  # FIXME: Remove the \n hack. Not sure why Filler doesn't work
             # l = urwid.Filler(l, height=3)
-            cols = [("pack", l)] + cols
+            cols = [("weight", 1, l)] + cols
 
         w = urwid.Columns(cols)
         super().__init__(w)
@@ -268,6 +270,8 @@ def filter_panel():
             FancyCheckBox("All Partitions"),
             FancyCheckBox("My Jobs"),
             FancyCheckBox("Running"),
+            FancyCheckBox("Use GPU"),
+            FancyCheckBox("Interactive"),
             urwid.Divider(),
             urwid.Text("Job Name:"),
             urwid.LineBox(urwid.Edit()),
