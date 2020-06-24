@@ -7,15 +7,15 @@ packages = find_packages()
 print(packages)
 
 setup(
-    name="slurmtop",
-    description="A terminal-based graphical activity monitor for Slurm",
+    name="stui",
+    description="A Slurm client for the terminal.",
     long_description=readme,
     version="0.1",
     packages=find_packages("src"),
     author="Milad Alizadeh",
-    url="https://github.com/mi-lad/slurmtop",
+    url="https://github.com/mi-lad/stui",
     keywords=["slurm", "cluster"],
-    author_email="milad@mil.ad",
+    author_email="m@mil.ad",
     classifiers=[
         "Intended Audience :: Developers",
         "License :: OSI Approved :: MIT License",
