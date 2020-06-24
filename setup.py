@@ -11,7 +11,7 @@ setup(
     description="A Slurm client for the terminal.",
     long_description=readme,
     version="0.1",
-    packages=find_packages("src"),
+    packages=find_packages(),
     author="Milad Alizadeh",
     url="https://github.com/mi-lad/stui",
     keywords=["slurm", "cluster"],
