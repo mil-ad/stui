@@ -3,7 +3,7 @@ from datetime import datetime
 
 import urwid
 
-import backend
+from stui import backend
 
 UPDATE_INTERVAL = 10
 
