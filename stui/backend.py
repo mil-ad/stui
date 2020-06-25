@@ -2,6 +2,33 @@ import subprocess
 import re
 import shutil
 
+STATE_MAPPING = {
+    "BF": "Boot Fail",
+    "CA": "Cancelled",
+    "CD": "Completed",
+    "CF": "Configuring",
+    "CG": "Completing",
+    "DL": "Deadline",
+    "F": "Failed",
+    "NF": "Node Fail",
+    "OOM": "Out Of Memory",
+    "PD": "Pending",
+    "PR": "Preempted",
+    "R": "Running",
+    "RD": "Resv Del Hold",
+    "RF": "Requeue Fed",
+    "RH": "Requeue Hold",
+    "RQ": "Requeued",
+    "RS": "Resizing",
+    "RV": "Revoked",
+    "SI": "Signaling",
+    "SE": "Special Exit",
+    "SO": "Stage Out",
+    "ST": "Stopped",
+    "S": "Suspended",
+    "TO": "Timeout",
+}
+
 
 class Cluster(object):
     def __init__(self, remote):
@@ -48,8 +75,9 @@ class Cluster(object):
         return config
 
     def get_jobs(self):
-        return {"foo":"foo"}
-        o = self.run_command("squeue")
+        # return {"foo": "foo"}
+        cmd = 'squeue --all --format="%.18i %.10P %.30j %.8u %.2t %.10M %.6D %.5y %.20R %.15b"'
+        o = self.run_command(cmd)
 
         jobs = []
         fields = o[0].split()
@@ -74,11 +102,11 @@ class Job(object):
         self.partition = string["PARTITION"]
         self.name = string["NAME"]
         self.user = string["USER"]
-        self.state = string["ST"]
-        # self.time
+        self.state = STATE_MAPPING[string["ST"]]
+        self.time = string["TIME"]
 
     def __repr__(self):
-        return f"{self.job_id} User: {self.user} State: {self.state}"
+        return f"{self.job_id} - {self.user} - {self.name} - {self.time} - {self.state}"
 
 
 class JobStep(object):

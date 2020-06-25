@@ -228,7 +228,7 @@ class JobText(urwid.Text):
         return key
 
 
-class JobRow(urwid.Columns):
+class SelectableColumns(urwid.Columns):
     def selectable(self):
         return True
 
@@ -238,7 +238,7 @@ class JobRow(urwid.Columns):
 
 def create_job_widget(job, callback):
     label = str(job)
-    button = JobRow([urwid.Text(label), urwid.Text(("test_A", u"running")),])
+    button = SelectableColumns([urwid.Text(label), urwid.Text(("test_A", u"running")),])
     return urwid.AttrMap(button, None, focus_map="reversed")
 
 
@@ -322,28 +322,59 @@ class JobsTab(object):
         )
 
     def queue_panel(self):
-        # header = urwid.Columns([urwid.Text("Job ID"), urwid.Text("Foo")])
 
-        jobs_widgets = [
-            create_job_widget(job, job_context_menu) for job in self.cluster.get_jobs()
+        column_labels = ["Job ID", "User", "Name", "State", "Partition", "Time"]
+        width_weights = [1, 1, 4, 2, 1, 2]
+        self.width_weights = width_weights
+
+        header_w = [
+            (
+                "weight",
+                weight,
+                urwid.Padding(urwid.AttrMap(urwid.Text(c), "bold")),
+            )
+            for c, weight in zip(column_labels, width_weights)
         ]
+        header_w = urwid.Columns(header_w)
 
-        self.walker = urwid.SimpleFocusListWalker(jobs_widgets)
+        job_widgets = self.get_job_widgets()
 
-        return FancyLineBox(urwid.ListBox(self.walker), "Queue",)
+        self.walker = urwid.SimpleFocusListWalker(job_widgets)
+        lb = urwid.ListBox(self.walker)
+
+        w = urwid.Frame(lb, header_w)
+
+        return FancyLineBox(w, "Queue",)
+
+
+    def get_job_widgets(self):
+
+        jobs_widgets = []
+        for job in self.cluster.get_jobs():
+            texts = [
+                urwid.Text(job.job_id),
+                urwid.Text(job.user),
+                urwid.Text(job.name),
+                urwid.Text(job.state),
+                urwid.Text("NA"),
+                urwid.Text(job.time),
+            ]
+
+            w = SelectableColumns(
+                [
+                    ("weight", weight, urwid.Padding(t))
+                    for weight, t in zip(self.width_weights, texts)
+                ]
+            )
+
+            w = urwid.AttrMap(w, None, focus_map="reversed")
+
+            jobs_widgets.append(w)
+
+        return jobs_widgets
 
     def refresh(self):
-
-        jobs_widgets = [
-            create_job_widget(job, job_context_menu) for job in self.cluster.get_jobs()
-        ]
-
-        self.walker[:] = jobs_widgets
-
-        # self.walker = urwid.SimpleFocusListWalker(jobs_widgets)
-
-        # self.walker.append(create_job_widget("new_job", job_context_menu))
-        # pass
+        self.walker[:] = self.get_job_widgets()
 
 
 class NodesTab(object):
