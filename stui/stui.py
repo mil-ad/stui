@@ -378,7 +378,7 @@ class AppWidget(urwid.WidgetWrap):
         self.header_time = urwid.Text(datetime.now().strftime("%X"), align="right")
         header = urwid.Columns(
             [
-                urwid.Text("slurm-tui", align="left"),
+                urwid.Text("stui", align="left"),
                 urwid.Text(
                     [
                         (None, "Cluster:"),
