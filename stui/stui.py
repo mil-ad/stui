@@ -486,6 +486,9 @@ def parse_args():
     return args
 
 
-if __name__ == "__main__":
+def main():
     args = parse_args()
     SlurmtopApp(args).run()
+
+if __name__ == "__main__":
+    main()
