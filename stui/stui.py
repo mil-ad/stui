@@ -5,7 +5,7 @@ import urwid
 
 from stui import backend
 
-UPDATE_INTERVAL = 10
+UPDATE_INTERVAL = 1
 
 
 class FancyLineBox(urwid.LineBox):
@@ -236,12 +236,6 @@ class SelectableColumns(urwid.Columns):
         return key
 
 
-def create_job_widget(job, callback):
-    label = str(job)
-    button = SelectableColumns([urwid.Text(label), urwid.Text(("test_A", u"running")),])
-    return urwid.AttrMap(button, None, focus_map="reversed")
-
-
 def job_context_menu():
     cancel_job = urwid.Button(u"Cancel Job")
     back_button = urwid.Button(u"Back")
@@ -307,6 +301,34 @@ def action_panel():
 
 
 class JobsTab(object):
+
+    STATE_ATTR_MAPPING = {
+        "Boot Fail": ["", ""],
+        "Cancelled": ["", ""],
+        "Completed": ["", ""],
+        "Configuring": ["", ""],
+        "Completing": ["", ""],
+        "Deadline": ["", ""],
+        "Failed": ["", ""],
+        "Node Fail": ["", ""],
+        "Out Of Memory": ["", ""],
+        "Pending": ["job_state_pending", ""],
+        "Preempted": ["", ""],
+        "Running": ["job_state_running", ""],
+        "Resv Del Hold": ["", ""],
+        "Requeue Fed": ["", ""],
+        "Requeue Hold": ["", ""],
+        "Requeued": ["", ""],
+        "Resizing": ["", ""],
+        "Revoked": ["", ""],
+        "Signaling": ["", ""],
+        "Special Exit": ["", ""],
+        "Stage Out": ["", ""],
+        "Stopped": ["", ""],
+        "Suspended": ["", ""],
+        "Timeout": ["", ""],
+}
+
     def __init__(self, cluster):
         super().__init__()
 
@@ -355,8 +377,8 @@ class JobsTab(object):
                 urwid.Text(job.job_id),
                 urwid.Text(job.user),
                 urwid.Text(job.name),
-                urwid.Text(job.state),
-                urwid.Text("NA"),
+                urwid.AttrMap(urwid.Text(job.state), *self.STATE_ATTR_MAPPING[job.state]),
+                urwid.Text(job.partition),
                 urwid.Text(job.time),
             ]
 
@@ -367,7 +389,7 @@ class JobsTab(object):
                 ]
             )
 
-            w = urwid.AttrMap(w, None, focus_map="reversed")
+            w = urwid.AttrMap(w, None, focus_map={None: "reversed", "job_state_running": "reversed"}) #FIXME
 
             jobs_widgets.append(w)
 
@@ -454,6 +476,8 @@ class SlurmtopApp(object):
 
         # (name, foreground, background, mono, foreground_high, background_high)
         self.palette = [
+            ("job_state_running", "light cyan", ""),
+            ("job_state_pending", "yellow", ""),
             ("active_tab_label", "yellow", ""),
             ("focus_and_active_tab_label", "yellow,underline", ""),
             ("focus_and_inactive_tab_label", "underline", ""),

@@ -2,6 +2,9 @@ import subprocess
 import re
 import shutil
 
+import paramiko
+
+
 STATE_MAPPING = {
     "BF": "Boot Fail",
     "CA": "Cancelled",
@@ -38,7 +41,10 @@ class Cluster(object):
             if shutil.which("sinfo") is None:
                 raise SystemExit("Slurm binaries not found.")
         else:
-            pass
+            self.ssh_client = paramiko.SSHClient()
+            self.ssh_client.load_system_host_keys()
+            self.ssh_client.connect(remote)
+
 
         self.remote = remote
 
@@ -51,15 +57,15 @@ class Cluster(object):
 
     def run_command(self, cmd: str):
         if self.remote:
-            cmd = " ".join(["ssh", self.remote, cmd])
-
-        process = subprocess.run(cmd.split(" "), capture_output=True)
-        o = process.stdout.decode("utf-8").splitlines()
+            stdin, stdout, stderr = self.ssh_client.exec_command(cmd)
+            o = stdout.readlines()
+        else:
+            process = subprocess.run(cmd.split(" "), capture_output=True)
+            o = process.stdout.decode("utf-8").splitlines()
 
         return o
 
     def get_config(self):
-        return {"ClusterName": "foo"}
         o = self.run_command("scontrol show config")
 
         pattern = "(\S+)\s*=(.*)"
@@ -75,7 +81,6 @@ class Cluster(object):
         return config
 
     def get_jobs(self):
-        # return {"foo": "foo"}
         cmd = 'squeue --all --format="%.18i %.10P %.30j %.8u %.2t %.10M %.6D %.5y %.20R %.15b"'
         o = self.run_command(cmd)
 

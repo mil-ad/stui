@@ -17,7 +17,7 @@ setup(
         "Intended Audience :: Developers",
         "License :: OSI Approved :: MIT License",
     ],
-    install_requires=["urwid"],
+    install_requires=["urwid", "paramiko"],
     python_requires=">=3.6",
     entry_points={
         "console_scripts": [
