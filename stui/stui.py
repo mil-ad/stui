@@ -374,12 +374,15 @@ class JobsTab(object):
         jobs_widgets = []
         for job in self.cluster.get_jobs():
             texts = [
-                urwid.Text(job.job_id),
-                urwid.Text(job.user),
-                urwid.Text(job.name),
-                urwid.AttrMap(urwid.Text(job.state), *self.STATE_ATTR_MAPPING[job.state]),
-                urwid.Text(job.partition),
-                urwid.Text(job.time),
+                urwid.Text(job.job_id, wrap="ellipsis"),
+                urwid.Text(job.user, wrap="ellipsis"),
+                urwid.Text(job.name, wrap="ellipsis"),
+                urwid.AttrMap(
+                    urwid.Text(job.state, wrap="ellipsis"),
+                    *self.STATE_ATTR_MAPPING[job.state]
+                ),
+                urwid.Text(job.partition, wrap="ellipsis"),
+                urwid.Text(job.time, wrap="ellipsis"),
             ]
 
             w = SelectableColumns(
