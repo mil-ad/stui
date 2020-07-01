@@ -81,7 +81,7 @@ class Cluster(object):
         return config
 
     def get_jobs(self):
-        cmd = 'squeue --all --format="%.18i %.10P %.30j %.8u %.2t %.10M %.6D %.5y %.20R %.15b"'
+        cmd = 'squeue --all --format="%.18i %.10P %.30j %.8u %.2t %.10M %.6D %.5y %.20R %.15b %F %K"'
         o = self.run_command(cmd)
 
         jobs = []
@@ -109,6 +109,18 @@ class Job(object):
         self.user = string["USER"]
         self.state = STATE_MAPPING[string["ST"]]
         self.time = string["TIME"]
+        self.nice = string["NICE"]
+
+        self.array_base_id = string["ARRAY_JOB_ID"]
+        self.array_task_id = string["ARRAY_TASK_ID"]
+
+        self.is_array_job = False if self.array_task_id == "N/A" else True
+
+        if self.is_array_job and "%" in self.array_task_id:
+            match = re.search("\d+-\d+%(\d+)", self.array_task_id)
+            self.array_throttle = match.group(1)
+        else:
+            self.array_throttle = None
 
     def __repr__(self):
         return f"{self.job_id} - {self.user} - {self.name} - {self.time} - {self.state}"
