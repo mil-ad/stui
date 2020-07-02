@@ -37,18 +37,20 @@ class Cluster(object):
     def __init__(self, remote):
         super().__init__()
 
+        self.use_paramiko = False
+
         if not remote:
             if shutil.which("sinfo") is None:
                 raise SystemExit("Slurm binaries not found.")
-        else:
+        elif self.use_paramiko:
             self.ssh_client = paramiko.SSHClient()
             self.ssh_client.load_system_host_keys()
-            self.ssh_client.connect(remote)
-
+            self.ssh_client.set_missing_host_key_policy(paramiko.AutoAddPolicy())
+            self.ssh_client.connect(remote, look_for_keys=True)
 
         self.remote = remote
 
-        self.me = None
+        self.me = self.run_command("whoami")
 
         # self.nodes = get_nodes()
         self.partitions = None
@@ -57,8 +59,13 @@ class Cluster(object):
 
     def run_command(self, cmd: str):
         if self.remote:
+            if self.use_paramiko:
             stdin, stdout, stderr = self.ssh_client.exec_command(cmd)
             o = stdout.readlines()
+        else:
+                cmd = f"ssh {self.remote} {cmd}"
+                process = subprocess.run(cmd.split(" "), capture_output=True)
+                o = process.stdout.decode("utf-8").splitlines()
         else:
             process = subprocess.run(cmd.split(" "), capture_output=True)
             o = process.stdout.decode("utf-8").splitlines()
