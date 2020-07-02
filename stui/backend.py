@@ -81,13 +81,13 @@ class Cluster(object):
         return config
 
     def get_jobs(self):
-        cmd = 'squeue --all --format="%all"'
+        cmd = 'squeue --all --format="%A|%C|%b|%F|%K|%j|%P|%r|%u|%y|%t|%M|%b"'
         o = self.run_command(cmd)
 
         jobs = []
         fields = o[0].split("|")
         for line in o[1:]:
-            job = {k.strip(): v for k, v in zip(fields, line.split("|"))}
+            job = {k: v for k, v in zip(fields, line.split("|"))}
             jobs.append(Job(job))
 
         return jobs
