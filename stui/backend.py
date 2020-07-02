@@ -60,9 +60,9 @@ class Cluster(object):
     def run_command(self, cmd: str):
         if self.remote:
             if self.use_paramiko:
-            stdin, stdout, stderr = self.ssh_client.exec_command(cmd)
-            o = stdout.readlines()
-        else:
+                stdin, stdout, stderr = self.ssh_client.exec_command(cmd)
+                o = stdout.readlines()
+            else:
                 cmd = f"ssh {self.remote} {cmd}"
                 process = subprocess.run(cmd.split(" "), capture_output=True)
                 o = process.stdout.decode("utf-8").splitlines()
