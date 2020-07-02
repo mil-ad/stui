@@ -109,6 +109,10 @@ class SpinButton(urwid.WidgetWrap):
         w = urwid.Columns(cols)
         super().__init__(w)
 
+    def set_value(self, x):
+        x = str(x)
+        self.text.set_text(x)
+
 
 class TabLineBox(urwid.LineBox):
     def __init__(self, original_widget):
@@ -256,50 +260,6 @@ def job_context_menu():
     return x
 
 
-def filter_panel():
-
-    f = urwid.Pile(
-        [
-            urwid.Divider(),
-            FancyCheckBox("All Partitions"),
-            FancyCheckBox("My Jobs"),
-            FancyCheckBox("Running"),
-            FancyCheckBox("Use GPU"),
-            FancyCheckBox("Interactive"),
-            urwid.Divider(),
-            urwid.Text("Job Name:"),
-            urwid.LineBox(urwid.Edit()),
-            urwid.Divider(),
-            urwid.Text("Node Name:"),
-            urwid.LineBox(urwid.Edit()),
-        ]
-    )
-    # f = urwid.Filler(f, valign="top")
-
-    return FancyLineBox(f, "Filter")
-
-
-def action_panel():
-
-    f = urwid.Pile(
-        [
-            urwid.Divider(),
-            urwid.Text("Selected Job(s):"),
-            SpinButton(min=None, max=None, start=" ", step=1, label="Nice:"),
-            SpinButton(min=1, max=None, start=" ", step=1, label="Throttle:"),
-            urwid.Padding(Fancy2Button("Cancel"), width="pack"),
-            urwid.Divider(),
-            urwid.Text("All My Jobs:"),
-            urwid.Padding(Fancy2Button("Cancel All"), width="pack"),
-            urwid.Padding(Fancy2Button("Cancel Newest"), width="pack"),
-            urwid.Padding(Fancy2Button("Cancel Oldest"), width="pack"),
-        ]
-    )
-    f = urwid.Filler(f, valign="top")
-
-    return FancyLineBox(f, "Actions")
-
-
 class JobsTab(object):
 
     STATE_ATTR_MAPPING = {
@@ -335,13 +295,26 @@ class JobsTab(object):
         self.cluster = cluster
 
         self.qpanel = self.queue_panel()
-        fpanel = filter_panel()
-        apanel = action_panel()
+        fpanel = self.filter_panel()
+        apanel = self.action_panel()
         right_col = urwid.Pile([("pack", fpanel), apanel])
 
         self.view = urwid.Columns(
             [("weight", 80, self.qpanel), ("weight", 20, right_col)], dividechars=1
         )
+
+        urwid.connect_signal(self.walker, "modified", self.on_job_selected)
+
+    def on_job_selected(self):
+        _, job_idx = self.walker.get_focus()
+        job = self.jobs[job_idx]
+
+        self.nice_spinbutton.set_value(job.nice)
+
+        throttle = "-" if job.array_throttle is None else str(job.array_throttle)
+        self.throttle_spinbutton.set_value(throttle)
+
+        # array_throttle
 
     def queue_panel(self):
 
@@ -367,6 +340,56 @@ class JobsTab(object):
         w = urwid.Frame(lb, header_w)
 
         return FancyLineBox(w, "Queue",)
+
+    def action_panel(self):
+
+        self.nice_spinbutton = SpinButton(
+            min=None, max=None, start=" ", step=1, label="Nice:"
+        )
+
+        self.throttle_spinbutton = SpinButton(
+            min=1, max=None, start=" ", step=1, label="Throttle:"
+        )
+
+        f = urwid.Pile(
+            [
+                urwid.Divider(),
+                urwid.Text("Selected Job(s):"),
+                self.nice_spinbutton,
+                self.throttle_spinbutton,
+                urwid.Padding(Fancy2Button("Cancel"), width="pack"),
+                urwid.Divider(),
+                urwid.Text("All My Jobs:"),
+                urwid.Padding(Fancy2Button("Cancel All"), width="pack"),
+                urwid.Padding(Fancy2Button("Cancel Newest"), width="pack"),
+                urwid.Padding(Fancy2Button("Cancel Oldest"), width="pack"),
+            ]
+        )
+        f = urwid.Filler(f, valign="top")
+
+        return FancyLineBox(f, "Actions")
+
+    def filter_panel(self):
+
+        f = urwid.Pile(
+            [
+                urwid.Divider(),
+                FancyCheckBox("All Partitions"),
+                FancyCheckBox("My Jobs"),
+                FancyCheckBox("Running"),
+                FancyCheckBox("Use GPU"),
+                FancyCheckBox("Interactive"),
+                urwid.Divider(),
+                urwid.Text("Job Name:"),
+                urwid.LineBox(urwid.Edit()),
+                urwid.Divider(),
+                urwid.Text("Node Name:"),
+                urwid.LineBox(urwid.Edit()),
+            ]
+        )
+        # f = urwid.Filler(f, valign="top")
+
+        return FancyLineBox(f, "Filter")
 
 
     def get_job_widgets(self):
