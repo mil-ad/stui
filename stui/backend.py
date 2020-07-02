@@ -110,13 +110,15 @@ class Job(object):
         super().__init__()
 
         self.job_id = string["JOBID"]
-        self.nodes = string["NODES"]
+        # self.nodes = string["NODES"]
         self.partition = string["PARTITION"]
         self.name = string["NAME"]
         self.user = string["USER"]
         self.state = STATE_MAPPING[string["ST"]]
         self.time = string["TIME"]
         self.nice = string["NICE"]
+        self.cpus = string["CPUS"]
+        self.gres = string["GRES"] if "GRES" in string else None
 
         self.array_base_id = string["ARRAY_JOB_ID"]
         self.array_task_id = string["ARRAY_TASK_ID"]
