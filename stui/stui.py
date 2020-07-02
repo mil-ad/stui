@@ -224,12 +224,12 @@ class Tabbed(urwid.WidgetWrap):
         return self.tabs.index(self._w.contents[0])
 
 
-class JobText(urwid.Text):
-    def selectable(self):
-        return True
+# class JobText(urwid.Text):
+#     def selectable(self):
+#         return True
 
-    def keypress(self, size, key):
-        return key
+#     def keypress(self, size, key):
+#         return key
 
 
 class SelectableColumns(urwid.Columns):
@@ -287,7 +287,7 @@ class JobsTab(object):
         "Stopped": ["", ""],
         "Suspended": ["", ""],
         "Timeout": ["", ""],
-}
+    }
 
     def __init__(self, cluster):
         super().__init__()
@@ -318,21 +318,37 @@ class JobsTab(object):
 
     def queue_panel(self):
 
-        column_labels = ["Job ID", "User", "Name", "State", "Partition", "Time"]
-        width_weights = [1, 1, 4, 2, 1, 2]
-        self.width_weights = width_weights
+        column_labels = [
+            "Job ID",
+            "User",
+            "Name",
+            "State",
+            "Partition",
+            "CPUs",
+            "GRES",
+            "Time",
+        ]
+        self.width_weights = [
+            (10,),
+            ("weight", 1),
+            ("weight", 4),
+            (14,),
+            ("weight", 1),
+            (5,),
+            ("weight", 1),
+            (11,),
+        ]
 
         header_w = [
             (
-                "weight",
-                weight,
-                urwid.Padding(urwid.AttrMap(urwid.Text(c), "bold")),
+                *weight,
+                urwid.Padding(urwid.AttrMap(urwid.Text(c, wrap="ellipsis"), "bold")),
             )
-            for c, weight in zip(column_labels, width_weights)
+            for c, weight in zip(column_labels, self.width_weights)
         ]
         header_w = urwid.Columns(header_w)
 
-        job_widgets = self.get_job_widgets()
+        job_widgets, self.jobs = self.get_job_widgets()
 
         self.walker = urwid.SimpleFocusListWalker(job_widgets)
         lb = urwid.ListBox(self.walker)
@@ -391,11 +407,15 @@ class JobsTab(object):
 
         return FancyLineBox(f, "Filter")
 
+    def filter_jobs(self, jobs):
+        return jobs
 
     def get_job_widgets(self):
 
+        jobs = self.cluster.get_jobs()
+        jobs = self.filter_jobs(jobs)
         jobs_widgets = []
-        for job in self.cluster.get_jobs():
+        for job in jobs:
             texts = [
                 urwid.Text(job.job_id, wrap="ellipsis"),
                 urwid.Text(job.user, wrap="ellipsis"),
@@ -405,24 +425,28 @@ class JobsTab(object):
                     *self.STATE_ATTR_MAPPING[job.state]
                 ),
                 urwid.Text(job.partition, wrap="ellipsis"),
+                urwid.Text(job.cpus, wrap="ellipsis"),
+                urwid.Text(job.gres, wrap="ellipsis"),
                 urwid.Text(job.time, wrap="ellipsis"),
             ]
 
             w = SelectableColumns(
                 [
-                    ("weight", weight, urwid.Padding(t))
+                    (*weight, urwid.Padding(t))
                     for weight, t in zip(self.width_weights, texts)
                 ]
             )
 
-            w = urwid.AttrMap(w, None, focus_map={None: "reversed", "job_state_running": "reversed"}) #FIXME
+            w = urwid.AttrMap(
+                w, None, focus_map={None: "reversed", "job_state_running": "reversed"}
+            )  # FIXME
 
             jobs_widgets.append(w)
 
-        return jobs_widgets
+        return jobs_widgets, jobs
 
     def refresh(self):
-        self.walker[:] = self.get_job_widgets()
+        self.walker[:], self.jobs = self.get_job_widgets()
 
 
 class NodesTab(object):
@@ -570,6 +594,7 @@ def parse_args():
 def main():
     args = parse_args()
     SlurmtopApp(args).run()
+
 
 if __name__ == "__main__":
     main()
