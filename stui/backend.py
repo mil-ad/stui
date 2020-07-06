@@ -100,17 +100,12 @@ class Cluster(object):
         return jobs
 
 
-class Partition(object):
-    def __init__(self):
-        super().__init__()
-
-
 class Job(object):
     def __init__(self, string):
         super().__init__()
 
         self.job_id = string["JOBID"]
-        # self.nodes = string["NODES"]
+        self.nodes = string["NODELIST"].split(",")
         self.partition = string["PARTITION"]
         self.name = string["NAME"]
         self.user = string["USER"]
@@ -126,23 +121,16 @@ class Job(object):
         self.is_array_job = False if self.array_task_id == "N/A" else True
 
         if self.is_array_job and "%" in self.array_task_id:
-            match = re.search("\d+-\d+%(\d+)", self.array_task_id)
+            match = re.search("\d+%(\d+)", self.array_task_id)
             self.array_throttle = match.group(1)
         else:
             self.array_throttle = None
 
     def __repr__(self):
-        return f"{self.job_id} - {self.user} - {self.name} - {self.time} - {self.state}"
+        return f"Job {self.job_id} - State{self.state}"
 
-
-class JobStep(object):
-    def __init__(self):
-        super().__init__()
-
-
-class Node(object):
-    def __init__(self):
-        super().__init__()
+    def is_running(self):
+        return self.state == "Running"
 
 
 if __name__ == "__main__":
