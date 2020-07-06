@@ -1,6 +1,8 @@
 import subprocess
 import re
 import shutil
+import threading
+from time import sleep
 
 import paramiko
 
@@ -50,12 +52,22 @@ class Cluster(object):
 
         self.remote = remote
 
-        self.me = self.run_command("whoami")
+        self.me = self.run_command("whoami")[0]  ## TODO
 
-        # self.nodes = get_nodes()
         self.partitions = None
 
         self.config = self.get_config()
+
+        self.my_partitions, self.all_partitions = self.get_partition_info()
+
+        self.latest_jobs = []
+        self.thread = threading.Thread(target=self.thread_fn, daemon=True)
+        self.thread.start()
+
+    def thread_fn(self):
+        while True:
+            self.latest_jobs = self._get_jobs()
+            sleep(1)
 
     def run_command(self, cmd: str):
         if self.remote:
@@ -87,8 +99,19 @@ class Cluster(object):
 
         return config
 
+    def get_partition_info(self):
+
+        my_p = self.run_command('sinfo --format="%R" --noheader')
+        all_p = self.run_command('sinfo --format="%R" --noheader --all')
+
+        return my_p, all_p
+
     def get_jobs(self):
-        cmd = 'squeue --all --format="%A|%C|%b|%F|%K|%j|%P|%r|%u|%y|%t|%M|%b"'
+        # TODO Acquire a lock a return a clone?
+        return self.latest_jobs
+
+    def _get_jobs(self):
+        cmd = 'squeue --all --format="%A|%C|%b|%F|%K|%j|%P|%r|%u|%y|%t|%M|%b|%N"'
         o = self.run_command(cmd)
 
         jobs = []
