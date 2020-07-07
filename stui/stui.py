@@ -238,7 +238,14 @@ class JobsTab(object):
         )
 
         cancel_all = FancyButton("Cancel All")
-        urwid.connect_signal(cancel_all, "click", self.popup, None)
+        cancel_mine = FancyButton("Cancel")
+        cancel_newest = FancyButton("Cancel Newest")
+        cancel_oldest = FancyButton("Cancel Oldest")
+
+        urwid.connect_signal(cancel_all, "click", self.cancel_popup, None)
+        urwid.connect_signal(cancel_mine, "click", self.cancel_popup, None)
+        urwid.connect_signal(cancel_newest, "click", self.cancel_popup, None)
+        urwid.connect_signal(cancel_oldest, "click", self.cancel_popup, None)
 
         f = urwid.Pile(
             [
@@ -246,12 +253,12 @@ class JobsTab(object):
                 urwid.Text("Selected Job(s):"),
                 self.nice_spinbutton,
                 self.throttle_spinbutton,
-                urwid.Padding(FancyButton("Cancel"), width="pack"),
+                urwid.Padding(cancel_mine, width="pack"),
                 urwid.Divider(),
                 urwid.Text("My Jobs:"),
                 urwid.Padding(cancel_all, width="pack"),
-                urwid.Padding(FancyButton("Cancel Newest"), width="pack"),
-                urwid.Padding(FancyButton("Cancel Oldest"), width="pack"),
+                urwid.Padding(cancel_newest, width="pack"),
+                urwid.Padding(cancel_oldest, width="pack"),
             ]
         )
         f = urwid.Filler(f, valign="top")
@@ -378,7 +385,7 @@ class JobsTab(object):
     def refresh(self):
         self.walker[:], self.jobs = self.get_job_widgets()
 
-    def popup(self, arg):
+    def cancel_popup(self, arg):
 
         ok_button = FancyButton("OK")
         cancel_button = FancyButton("Cancel")
@@ -411,7 +418,10 @@ class JobsTab(object):
 
         self.view_placeholder.original_widget = overlay
 
-    def close_popup(self, arg):
+    def close_popup(self, cancel):
+        if cancel:
+            pass
+
         self.view_placeholder.original_widget = self.view
 
     def get_view(self):
