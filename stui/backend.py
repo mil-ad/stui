@@ -122,6 +122,13 @@ class Cluster(object):
 
         return jobs
 
+    def cancel_jobs(self, jobs):
+        job_ids = " ".join([j.job_id] for j in jobs)
+        self.run_command(f"scancel {job_ids}")
+
+    def cancel_my_jobs(self):
+        self.run_command(f"scancel -u {self.me}")
+
 
 class Job(object):
     def __init__(self, string):
