@@ -89,15 +89,16 @@ class SpinButton(urwid.WidgetWrap):
         w = urwid.Text("")
         self.text = w
         w = urwid.LineBox(w)
-        w = urwid.AttrMap(w, "disabled_tab_label")
+        w = urwid.AttrMap(w, "inactive_tab_label")
+        self.linebox = w
 
         self.plus = Fancy2Button("+", padding_len=0)
         self.minus = Fancy2Button("-", padding_len=0)
 
-        plus = urwid.AttrMap(self.plus, "", "active_tab_label")
-        minus = urwid.AttrMap(self.minus, "", "active_tab_label")
+        self.plus = urwid.AttrMap(self.plus, "", "active_tab_label")
+        self.minus = urwid.AttrMap(self.minus, "", "active_tab_label")
 
-        cols = [w, (3, plus), (3, minus)]
+        cols = [w, (3, self.plus), (3, self.minus)]
 
         if label is not None:
             l = urwid.Text(
@@ -112,6 +113,25 @@ class SpinButton(urwid.WidgetWrap):
     def set_value(self, x):
         x = str(x)
         self.text.set_text(x)
+
+    def disable(self):
+        self.plus.set_attr_map({"": "disabled_tab_label"})
+        self.minus.set_attr_map({"": "disabled_tab_label"})
+        self.linebox.set_attr_map({"": "disabled_tab_label"})
+        self.set_value("-")
+
+    def enable(self):
+        self.plus.set_attr_map({"": "active_tab_label"})
+        self.minus.set_attr_map({"": "active_tab_label"})
+        self.linebox.set_attr_map({"": "active_tab_label"})
+
+
+class SelectableColumns(urwid.Columns):
+    def selectable(self):
+        return True
+
+    def keypress(self, size, key):
+        return key
 
 
 class TabLineBox(urwid.LineBox):
@@ -224,31 +244,15 @@ class Tabbed(urwid.WidgetWrap):
         return self.tabs.index(self._w.contents[0])
 
 
-# class JobText(urwid.Text):
-#     def selectable(self):
-#         return True
-
-#     def keypress(self, size, key):
-#         return key
-
-
-class SelectableColumns(urwid.Columns):
-    def selectable(self):
-        return True
-
-    def keypress(self, size, key):
-        return key
-
-
 def job_context_menu():
-    cancel_job = urwid.Button(u"Cancel Job")
-    back_button = urwid.Button(u"Back")
+    cancel_job = urwid.Button("Cancel Job")
+    back_button = urwid.Button("Back")
 
     x = urwid.Pile([cancel_job, back_button])
 
     x = urwid.Overlay(
         x,
-        urwid.SolidFill(u"\N{MEDIUM SHADE}"),
+        urwid.SolidFill("\N{MEDIUM SHADE}"),
         align="center",
         width=("relative", 60),
         valign="middle",
@@ -303,7 +307,8 @@ class JobsTab(object):
             [("weight", 80, self.qpanel), ("weight", 20, right_col)], dividechars=1
         )
 
-        urwid.connect_signal(self.walker, "modified", self.on_job_selected)
+        # TODO FIXME
+        # urwid.connect_signal(self.walker, "modified", self.on_job_selected)
 
     def on_job_selected(self):
         _, job_idx = self.walker.get_focus()
@@ -311,10 +316,11 @@ class JobsTab(object):
 
         self.nice_spinbutton.set_value(job.nice)
 
-        throttle = "-" if job.array_throttle is None else str(job.array_throttle)
-        self.throttle_spinbutton.set_value(throttle)
-
-        # array_throttle
+        if job.array_throttle is not None:
+            self.throttle_spinbutton.enable()
+            self.throttle_spinbutton.set_value(str(job.array_throttle))
+        else:
+            self.throttle_spinbutton.disable()
 
     def queue_panel(self):
 
@@ -324,6 +330,7 @@ class JobsTab(object):
             "Name",
             "State",
             "Partition",
+            "Node(s)",
             "CPUs",
             "GRES",
             "Time",
@@ -331,8 +338,9 @@ class JobsTab(object):
         self.width_weights = [
             (10,),
             ("weight", 1),
-            ("weight", 4),
+            ("weight", 3),
             (14,),
+            ("weight", 1),
             ("weight", 1),
             (5,),
             ("weight", 1),
@@ -375,7 +383,7 @@ class JobsTab(object):
                 self.throttle_spinbutton,
                 urwid.Padding(Fancy2Button("Cancel"), width="pack"),
                 urwid.Divider(),
-                urwid.Text("All My Jobs:"),
+                urwid.Text("My Jobs:"),
                 urwid.Padding(Fancy2Button("Cancel All"), width="pack"),
                 urwid.Padding(Fancy2Button("Cancel Newest"), width="pack"),
                 urwid.Padding(Fancy2Button("Cancel Oldest"), width="pack"),
@@ -387,20 +395,26 @@ class JobsTab(object):
 
     def filter_panel(self):
 
+        self.filter_all_partitions = FancyCheckBox("All Partitions")
+        self.filter_my_jobs = FancyCheckBox("My Jobs")
+        self.filter_running = FancyCheckBox("Running")
+        self.filter_job_name = urwid.Edit()
+        self.filter_node_name = urwid.Edit()
+
         f = urwid.Pile(
             [
                 urwid.Divider(),
-                FancyCheckBox("All Partitions"),
-                FancyCheckBox("My Jobs"),
-                FancyCheckBox("Running"),
+                self.filter_all_partitions,
+                self.filter_my_jobs,
+                self.filter_running,
                 FancyCheckBox("Use GPU"),
                 FancyCheckBox("Interactive"),
                 urwid.Divider(),
                 urwid.Text("Job Name:"),
-                urwid.LineBox(urwid.Edit()),
+                urwid.LineBox(self.filter_job_name),
                 urwid.Divider(),
                 urwid.Text("Node Name:"),
-                urwid.LineBox(urwid.Edit()),
+                urwid.LineBox(self.filter_node_name),
             ]
         )
         # f = urwid.Filler(f, valign="top")
@@ -408,11 +422,55 @@ class JobsTab(object):
         return FancyLineBox(f, "Filter")
 
     def filter_jobs(self, jobs):
+
+        all_partitions_filter = (
+            lambda j: True
+            if self.filter_all_partitions.get_state()
+            else j.partition in self.cluster.my_partitions
+        )  ## TODO: should be a method in backend
+
+        my_job_filter = (
+            lambda j: True
+            if not self.filter_my_jobs.get_state()
+            else j.user == self.cluster.me
+        )
+
+        running_filter = (
+            lambda j: True if not self.filter_running.get_state() else j.is_running()
+        )
+
+        job_name_filter = (
+            lambda j: True
+            if self.filter_job_name.get_edit_text() == ""
+            else self.filter_job_name.get_edit_text() in j.name
+        )
+
+        node_name_filter = (
+            lambda j: True
+            if self.filter_node_name.get_edit_text() == ""
+            else self.filter_node_name.get_edit_text() in ",".join(j.nodes)
+        )
+
+        filters = (
+            all_partitions_filter,
+            my_job_filter,
+            running_filter,
+            job_name_filter,
+            node_name_filter,
+        )
+
+        for f in filters:
+            jobs = filter(f, jobs)
+
         return jobs
 
     def get_job_widgets(self):
 
         jobs = self.cluster.get_jobs()
+
+        if len(jobs) == 0:
+            return [], []
+
         jobs = self.filter_jobs(jobs)
         jobs_widgets = []
         for job in jobs:
@@ -422,9 +480,10 @@ class JobsTab(object):
                 urwid.Text(job.name, wrap="ellipsis"),
                 urwid.AttrMap(
                     urwid.Text(job.state, wrap="ellipsis"),
-                    *self.STATE_ATTR_MAPPING[job.state]
+                    *self.STATE_ATTR_MAPPING[job.state],
                 ),
                 urwid.Text(job.partition, wrap="ellipsis"),
+                urwid.Text(job.nodes, wrap="ellipsis"),
                 urwid.Text(job.cpus, wrap="ellipsis"),
                 urwid.Text(job.gres, wrap="ellipsis"),
                 urwid.Text(job.time, wrap="ellipsis"),
@@ -438,7 +497,13 @@ class JobsTab(object):
             )
 
             w = urwid.AttrMap(
-                w, None, focus_map={None: "reversed", "job_state_running": "reversed"}
+                w,
+                None,
+                focus_map={
+                    None: "reversed",
+                    "job_state_running": "reversed",
+                    "job_state_pending": "reversed",
+                },
             )  # FIXME
 
             jobs_widgets.append(w)
