@@ -2,6 +2,7 @@ import argparse
 from datetime import datetime
 
 import urwid
+from urwid.widget import Divider
 
 from stui import backend
 from stui.widgets import *
@@ -166,6 +167,8 @@ class JobsTab(object):
             [("weight", 80, self.qpanel), ("weight", 20, right_col)], dividechars=1
         )
 
+        self.view_placeholder = urwid.WidgetPlaceholder(self.view)
+
         # TODO FIXME
         # urwid.connect_signal(self.walker, "modified", self.on_job_selected)
 
@@ -234,18 +237,21 @@ class JobsTab(object):
             min=1, max=None, start=" ", step=1, label="Throttle:"
         )
 
+        cancel_all = FancyButton("Cancel All")
+        urwid.connect_signal(cancel_all, "click", self.popup, None)
+
         f = urwid.Pile(
             [
                 urwid.Divider(),
                 urwid.Text("Selected Job(s):"),
                 self.nice_spinbutton,
                 self.throttle_spinbutton,
-                urwid.Padding(Fancy2Button("Cancel"), width="pack"),
+                urwid.Padding(FancyButton("Cancel"), width="pack"),
                 urwid.Divider(),
                 urwid.Text("My Jobs:"),
-                urwid.Padding(Fancy2Button("Cancel All"), width="pack"),
-                urwid.Padding(Fancy2Button("Cancel Newest"), width="pack"),
-                urwid.Padding(Fancy2Button("Cancel Oldest"), width="pack"),
+                urwid.Padding(cancel_all, width="pack"),
+                urwid.Padding(FancyButton("Cancel Newest"), width="pack"),
+                urwid.Padding(FancyButton("Cancel Oldest"), width="pack"),
             ]
         )
         f = urwid.Filler(f, valign="top")
@@ -372,6 +378,45 @@ class JobsTab(object):
     def refresh(self):
         self.walker[:], self.jobs = self.get_job_widgets()
 
+    def popup(self, arg):
+
+        ok_button = FancyButton("OK")
+        cancel_button = FancyButton("Cancel")
+
+        buttons_col = urwid.Columns(
+            [(10, cancel_button), (10, ok_button)], dividechars=1, focus_column=0
+        )
+
+        urwid.connect_signal(ok_button, "click", self.close_popup, None)
+        urwid.connect_signal(cancel_button, "click", self.close_popup, None)
+
+        w = FancyLineBox(
+            urwid.Pile(
+                [
+                    urwid.Text("Are you sure you want to cancel selected job(s)?"),
+                    urwid.Divider(" "),
+                    urwid.Padding(buttons_col, align="center"),
+                ]
+            )
+        )
+
+        overlay = urwid.Overlay(
+            urwid.Filler(w, valign="top"),
+            self.view,
+            align="center",
+            width=("relative", 30),
+            valign="middle",
+            height=("relative", 30),
+        )
+
+        self.view_placeholder.original_widget = overlay
+
+    def close_popup(self, arg):
+        self.view_placeholder.original_widget = self.view
+
+    def get_view(self):
+        return self.view_placeholder
+
 
 class NodesTab(object):
     def __init__(self, cluster):
@@ -425,7 +470,7 @@ class AppWidget(urwid.WidgetWrap):
 
         tabbed = Tabbed(
             [
-                ("Jobs", self.jobs_tab.view),
+                ("Jobs", self.jobs_tab.get_view()),
                 ("Nodes", self.nodes_tab.view),
                 ("Admin", self.admin_tab.view),
             ]
