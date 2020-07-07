@@ -1,10 +1,10 @@
 import urwid
+from urwid.command_map import ACTIVATE
 
 __all__ = [
     "FancyLineBox",
     "FancyCheckBox",
-    "Fancy1Button",
-    "Fancy2Button",
+    "FancyButton",
     "SpinButton",
     "SelectableColumns",
     "TabLineBox",
@@ -13,7 +13,7 @@ __all__ = [
 
 
 class FancyLineBox(urwid.LineBox):
-    def __init__(self, original_widget, title):
+    def __init__(self, original_widget, title=""):
 
         original_widget = urwid.Padding(original_widget, left=1, right=1)
         # FIXME: I don't know why I should pass height here
@@ -84,6 +84,92 @@ class Fancy2Button(urwid.WidgetWrap):
 
     def mouse_event(self, *args, **kw):
         return self._hidden_btn.mouse_event(*args, **kw)
+
+
+class FancyButton(urwid.WidgetWrap):
+    signals = ["click"]
+
+    def __init__(self, label, on_press=None, user_data=None, padding_len=1):
+
+        padding = " " * padding_len
+        border = "─" * (len(label) + padding_len * 2)
+        # cursor_position = len(border) + padding_size
+
+        w = urwid.Text(
+            "╭" + border + "╮\n│" + padding + label + padding + "│\n╰" + border + "╯"
+        )
+        w = urwid.AttrMap(w, "", "active_tab_label")
+
+        # The old way of listening for a change was to pass the callback
+        # in to the constructor.  Just convert it to the new way:
+        if on_press:
+            urwid.connect_signal(self, "click", on_press, user_data)
+
+        super().__init__(w)
+
+    def sizing(self):
+        return frozenset([FLOW])
+
+    def _repr_words(self):
+        # include button.label in repr(button)
+        return self.__super._repr_words() + [python3_repr(self.label)]
+
+    def set_label(self, label):
+        self._label.set_text(label)
+
+    def selectable(self):
+        return True
+
+    def get_label(self):
+        return self._label.text
+
+    label = property(get_label)
+
+    def keypress(self, size, key):
+        """
+        Send 'click' signal on 'activate' command.
+
+        >>> assert Button._command_map[' '] == 'activate'
+        >>> assert Button._command_map['enter'] == 'activate'
+        >>> size = (15,)
+        >>> b = Button(u"Cancel")
+        >>> clicked_buttons = []
+        >>> def handle_click(button):
+        ...     clicked_buttons.append(button.label)
+        >>> key = connect_signal(b, 'click', handle_click)
+        >>> b.keypress(size, 'enter')
+        >>> b.keypress(size, ' ')
+        >>> clicked_buttons # ... = u in Python 2
+        [...'Cancel', ...'Cancel']
+        """
+
+        if self._command_map[key] != ACTIVATE:
+            return key
+
+        self._emit("click")
+
+    def mouse_event(self, size, event, button, x, y, focus):
+        """
+        Send 'click' signal on button 1 press.
+
+        >>> size = (15,)
+        >>> b = Button(u"Ok")
+        >>> clicked_buttons = []
+        >>> def handle_click(button):
+        ...     clicked_buttons.append(button.label)
+        >>> key = connect_signal(b, 'click', handle_click)
+        >>> b.mouse_event(size, 'mouse press', 1, 4, 0, True)
+        True
+        >>> b.mouse_event(size, 'mouse press', 2, 4, 0, True) # ignored
+        False
+        >>> clicked_buttons # ... = u in Python 2
+        [...'Ok']
+        """
+        if button != 1 or not urwid.util.is_mouse_press(event):
+            return False
+
+        self._emit("click")
+        return True
 
 
 class SpinButton(urwid.WidgetWrap):
