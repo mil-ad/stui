@@ -522,6 +522,7 @@ class SlurmtopApp(object):
     def __init__(self, args):
         super().__init__()
 
+        # TODO: Do this in the background? makes startup slow
         self.cluster = backend.Cluster(args.remote)
 
         # (name, foreground, background, mono, foreground_high, background_high)
