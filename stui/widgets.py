@@ -189,9 +189,10 @@ class SpinButton(urwid.WidgetWrap):
         self.text.set_text(x)
 
     def disable(self):
+        # TODO: Why do I have to pass "" in one case and None in another? A bug in urwid?
         self.plus.set_attr_map({"": "disabled_tab_label"})
         self.minus.set_attr_map({"": "disabled_tab_label"})
-        self.linebox.set_attr_map({"": "disabled_tab_label"})
+        self.linebox.set_attr_map({None: "disabled_tab_label"})
         self.set_value("-")
 
     def enable(self):
