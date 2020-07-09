@@ -46,20 +46,7 @@ class FancyCheckBox(urwid.CheckBox):
     reserve_columns = 4
 
 
-class Fancy1Button(urwid.WidgetWrap):
-    def __init__(self, label, on_press=None, user_data=None):
-
-        w = urwid.Text(label, "center")
-        w = FancyLineBox(w, title="")
-        # w = urwid.Padding(w, "center", "pack")
-        # w = urwid.AttrMap(w, "highlight")
-        super().__init__(w)
-
-    def selectable(self):
-        return True
-
-
-class Fancy2Button(urwid.WidgetWrap):
+class FancyButton(urwid.WidgetWrap):
     def __init__(self, label, on_press=None, user_data=None, padding_len=1):
         padding = " " * padding_len
         border = "─" * (len(label) + padding_len * 2)
@@ -175,12 +162,9 @@ class FancyButton(urwid.WidgetWrap):
 class SpinButton(urwid.WidgetWrap):
     def __init__(self, min, max, start, step, label=None):
 
-        # w = urwid.Edit()
-        w = urwid.Text("")
-        self.text = w
-        w = urwid.LineBox(w)
-        w = urwid.AttrMap(w, "inactive_tab_label")
-        self.linebox = w
+        self.text = urwid.Text("")
+        w = urwid.LineBox(self.text)
+        self.linebox = urwid.AttrMap(w, "inactive_tab_label")
 
         plus = FancyButton("+", padding_len=0)
         minus = FancyButton("-", padding_len=0)
@@ -188,7 +172,7 @@ class SpinButton(urwid.WidgetWrap):
         self.plus = urwid.AttrMap(plus, "inactive_tab_label", "active_tab_label")
         self.minus = urwid.AttrMap(minus, "inactive_tab_label", "active_tab_label")
 
-        cols = [w, (3, self.plus), (3, self.minus)]
+        cols = [self.linebox, (3, self.plus), (3, self.minus)]
 
         if label is not None:
             l = urwid.Text(
