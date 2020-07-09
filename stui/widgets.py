@@ -182,11 +182,11 @@ class SpinButton(urwid.WidgetWrap):
         w = urwid.AttrMap(w, "inactive_tab_label")
         self.linebox = w
 
-        self.plus = Fancy2Button("+", padding_len=0)
-        self.minus = Fancy2Button("-", padding_len=0)
+        plus = FancyButton("+", padding_len=0)
+        minus = FancyButton("-", padding_len=0)
 
-        self.plus = urwid.AttrMap(self.plus, "", "active_tab_label")
-        self.minus = urwid.AttrMap(self.minus, "", "active_tab_label")
+        self.plus = urwid.AttrMap(plus, "inactive_tab_label", "active_tab_label")
+        self.minus = urwid.AttrMap(minus, "inactive_tab_label", "active_tab_label")
 
         cols = [w, (3, self.plus), (3, self.minus)]
 
@@ -211,9 +211,9 @@ class SpinButton(urwid.WidgetWrap):
         self.set_value("-")
 
     def enable(self):
-        self.plus.set_attr_map({"": "active_tab_label"})
-        self.minus.set_attr_map({"": "active_tab_label"})
-        self.linebox.set_attr_map({"": "active_tab_label"})
+        self.plus.set_attr_map({"": "inactive_tab_label"})
+        self.minus.set_attr_map({"": "inactive_tab_label"})
+        self.linebox.set_attr_map({"": "inactive_tab_label"})
 
 
 class SelectableColumns(urwid.Columns):
