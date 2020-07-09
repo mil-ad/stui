@@ -10,7 +10,7 @@ from stui.widgets import *
 UPDATE_INTERVAL = 1
 
 
-global_loop = None #FIXME
+global_loop = None  # FIXME
 
 
 class Tab(urwid.WidgetWrap):
@@ -172,12 +172,13 @@ class JobsTab(object):
 
         self.view_placeholder = urwid.WidgetPlaceholder(self.view)
 
-        # TODO FIXME
-        # urwid.connect_signal(self.walker, "modified", self.on_job_selected)
+        urwid.connect_signal(self.walker, "modified", self.on_jobs_modified)
 
-    def on_job_selected(self):
-        _, job_idx = self.walker.get_focus()
-        job = self.jobs[job_idx]
+    def on_jobs_modified(self):
+        job = self.get_focus_job()
+
+        if job is None:
+            return
 
         self.nice_spinbutton.set_value(job.nice)
 
@@ -221,7 +222,8 @@ class JobsTab(object):
         ]
         header_w = urwid.Columns(header_w)
 
-        job_widgets, self.jobs = self.get_job_widgets()
+        self.jobs = self.cluster.get_jobs()
+        job_widgets = self.get_job_widgets(self.jobs)
 
         self.walker = urwid.SimpleFocusListWalker(job_widgets)
         lb = FancyListBox(self.walker)
@@ -340,16 +342,14 @@ class JobsTab(object):
         )
 
         for f in filters:
-            jobs = filter(f, jobs)
+            jobs = list(filter(f, jobs))
 
         return jobs
 
-    def get_job_widgets(self):
-
-        jobs = self.cluster.get_jobs()
+    def get_job_widgets(self, jobs):
 
         if len(jobs) == 0:
-            return [], []
+            return []
 
         jobs = self.filter_jobs(jobs)
         jobs_widgets = []
@@ -388,10 +388,19 @@ class JobsTab(object):
 
             jobs_widgets.append(w)
 
-        return jobs_widgets, jobs
+        return jobs_widgets
+
+    def get_focus_job(self):
+        _, job_idx = self.walker.get_focus()
+
+        if job_idx is None:
+            return None
+        else:
+            return self.jobs[job_idx]
 
     def refresh(self):
-        self.walker[:], self.jobs = self.get_job_widgets()
+        self.jobs = self.cluster.get_jobs()
+        self.walker[:] = self.get_job_widgets(self.jobs)
 
     def cancel_popup(self, arg):
 
@@ -428,9 +437,13 @@ class JobsTab(object):
 
     def attach_popup(self, arg):
 
-        #FIXME: The fixed height is a hack!
+        # FIXME: The fixed height is a hack!
 
         job = self.get_focus_job()
+
+        if job is None:
+            assert False  # FIXME
+
         attach_fn = self.cluster.get_attach_fn(job)
 
         cancel_button = FancyButton("Cancel")
@@ -457,7 +470,7 @@ class JobsTab(object):
             width=("relative", 80),
             valign="middle",
             # height=("relative", 80),
-            height=t_height + 6
+            height=t_height + 6,
         )
 
         self.view_placeholder.original_widget = overlay
