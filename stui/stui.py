@@ -428,27 +428,36 @@ class JobsTab(object):
 
     def attach_popup(self, arg):
 
+        #FIXME: The fixed height is a hack!
+
+        job = self.get_focus_job()
+        attach_fn = self.cluster.get_attach_fn(job)
+
         cancel_button = FancyButton("Cancel")
         urwid.connect_signal(cancel_button, "click", self.close_popup, None)
+
+        t = urwid.Terminal(attach_fn, encoding="utf-8")
+        t_height = 40
 
         w = FancyLineBox(
             urwid.Pile(
                 [
-                    urwid.Terminal("ssh aoraki ls -l".split(), encoding="utf-8"),
-                    # urwid.Divider(),
-                    # urwid.Padding(cancel_button, width="pack"),
+                    urwid.BoxAdapter(t, t_height),
+                    urwid.Divider("-"),
+                    ("pack", urwid.Padding(cancel_button)),
                 ]
             ),
         )
+        w = urwid.Filler(w, valign="top")
 
         overlay = urwid.Overlay(
-            # urwid.Filler(w, valign="top"),
             w,
             self.view,
             align="center",
             width=("relative", 80),
             valign="middle",
-            height=("relative", 80),
+            # height=("relative", 80),
+            height=t_height + 6
         )
 
         self.view_placeholder.original_widget = overlay
