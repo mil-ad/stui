@@ -17,11 +17,7 @@ setup(
         "Intended Audience :: Developers",
         "License :: OSI Approved :: MIT License",
     ],
-    install_requires=["urwid", "paramiko"],
+    install_requires=["urwid", "fabric"],
     python_requires=">=3.6",
-    entry_points={
-        "console_scripts": [
-            "stui=stui.stui:main",
-        ]
-    },
+    entry_points={"console_scripts": ["stui=stui.stui:main",]},
 )
