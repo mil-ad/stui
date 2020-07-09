@@ -432,19 +432,14 @@ class JobsTab(object):
         urwid.connect_signal(cancel_button, "click", self.close_popup, None)
 
         w = FancyLineBox(
-            # urwid.Filler(
             urwid.Pile(
                 [
-                    urwid.Terminal(None, main_loop=global_loop, encoding="utf-8"),
-                    urwid.Divider(" "),
-                    urwid.Padding(cancel_button, align="center"),
+                    urwid.Terminal("ssh aoraki ls -l".split(), encoding="utf-8"),
+                    # urwid.Divider(),
+                    # urwid.Padding(cancel_button, width="pack"),
                 ]
             ),
-            # valign="top",
-            # )
         )
-
-        w = urwid.Terminal("ls -l")
 
         overlay = urwid.Overlay(
             # urwid.Filler(w, valign="top"),
