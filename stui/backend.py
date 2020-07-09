@@ -4,7 +4,7 @@ import shutil
 import threading
 from time import sleep
 
-import paramiko
+import fabric
 
 
 STATE_MAPPING = {
@@ -39,16 +39,13 @@ class Cluster(object):
     def __init__(self, remote):
         super().__init__()
 
-        self.use_paramiko = False
+        self.use_fabric = True
 
         if not remote:
             if shutil.which("sinfo") is None:
                 raise SystemExit("Slurm binaries not found.")
-        elif self.use_paramiko:
-            self.ssh_client = paramiko.SSHClient()
-            self.ssh_client.load_system_host_keys()
-            self.ssh_client.set_missing_host_key_policy(paramiko.AutoAddPolicy())
-            self.ssh_client.connect(remote, look_for_keys=True)
+        elif self.use_fabric:
+            self.fabric_connection = fabric.Connection(remote)
 
         self.remote = remote
 
@@ -71,9 +68,9 @@ class Cluster(object):
 
     def run_command(self, cmd: str):
         if self.remote:
-            if self.use_paramiko:
-                stdin, stdout, stderr = self.ssh_client.exec_command(cmd)
-                o = stdout.readlines()
+            if self.use_fabric:
+                results = self.fabric_connection.run(cmd, hide=True)
+                o = results.stdout.splitlines()
             else:
                 cmd = f"ssh {self.remote} {cmd}"
                 process = subprocess.run(cmd.split(" "), capture_output=True)
