@@ -222,10 +222,7 @@ class JobsTab(object):
         ]
         header_w = urwid.Columns(header_w)
 
-        self.jobs = self.cluster.get_jobs()
-        job_widgets = self.get_job_widgets(self.jobs)
-
-        self.walker = urwid.SimpleFocusListWalker(job_widgets)
+        self.walker = urwid.SimpleFocusListWalker([])
         lb = FancyListBox(self.walker)
 
         w = urwid.Frame(lb, header_w)
