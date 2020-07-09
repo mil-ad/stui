@@ -10,6 +10,9 @@ from stui.widgets import *
 UPDATE_INTERVAL = 1
 
 
+global_loop = None #FIXME
+
+
 class Tab(urwid.WidgetWrap):
     def __init__(
         self, label, view, set_active_fn, set_active_next_fn, set_active_prev_fn
@@ -237,13 +240,16 @@ class JobsTab(object):
             min=1, max=None, start=" ", step=1, label="Throttle:"
         )
 
+        attach = FancyButton("Attach")
+
         cancel_all = FancyButton("Cancel All")
         cancel_mine = FancyButton("Cancel")
         cancel_newest = FancyButton("Cancel Newest")
         cancel_oldest = FancyButton("Cancel Oldest")
 
-        urwid.connect_signal(cancel_all, "click", self.cancel_popup, None)
         urwid.connect_signal(cancel_mine, "click", self.cancel_popup, None)
+        urwid.connect_signal(attach, "click", self.attach_popup, None)
+        urwid.connect_signal(cancel_all, "click", self.cancel_popup, None)
         urwid.connect_signal(cancel_newest, "click", self.cancel_popup, None)
         urwid.connect_signal(cancel_oldest, "click", self.cancel_popup, None)
 
@@ -253,7 +259,9 @@ class JobsTab(object):
                 urwid.Text("Selected Job(s):"),
                 self.nice_spinbutton,
                 self.throttle_spinbutton,
+                # urwid.Padding(urwid.Columns([("pack", cancel_mine), attach]), width="pack"),
                 urwid.Padding(cancel_mine, width="pack"),
+                urwid.Padding(attach, width="pack"),
                 urwid.Divider(),
                 urwid.Text("My Jobs:"),
                 urwid.Padding(cancel_all, width="pack"),
@@ -418,6 +426,38 @@ class JobsTab(object):
 
         self.view_placeholder.original_widget = overlay
 
+    def attach_popup(self, arg):
+
+        cancel_button = FancyButton("Cancel")
+        urwid.connect_signal(cancel_button, "click", self.close_popup, None)
+
+        w = FancyLineBox(
+            # urwid.Filler(
+            urwid.Pile(
+                [
+                    urwid.Terminal(None, main_loop=global_loop, encoding="utf-8"),
+                    urwid.Divider(" "),
+                    urwid.Padding(cancel_button, align="center"),
+                ]
+            ),
+            # valign="top",
+            # )
+        )
+
+        w = urwid.Terminal("ls -l")
+
+        overlay = urwid.Overlay(
+            # urwid.Filler(w, valign="top"),
+            w,
+            self.view,
+            align="center",
+            width=("relative", 80),
+            valign="middle",
+            height=("relative", 80),
+        )
+
+        self.view_placeholder.original_widget = overlay
+
     def close_popup(self, cancel):
         if cancel:
             pass
@@ -529,6 +569,8 @@ class SlurmtopApp(object):
         self.loop = urwid.MainLoop(
             self.w, self.palette, unhandled_input=self.exit_on_q,
         )
+        global global_loop
+        global_loop = self.loop
 
         # self.loop.screen.set_terminal_properties(bright_is_bold=False)
 
