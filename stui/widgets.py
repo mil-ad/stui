@@ -9,6 +9,8 @@ __all__ = [
     "SelectableColumns",
     "TabLineBox",
     "FancyListBox",
+    "Tabbed",
+    "Tab"
 ]
 
 
