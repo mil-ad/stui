@@ -61,7 +61,7 @@ class JobFilterWidget(urwid.WidgetWrap):
         self.filter_job_name = urwid.Edit()
         self.filter_node_name = urwid.Edit()
 
-        f = urwid.Pile(
+        w = urwid.Pile(
             [
                 urwid.Divider(),
                 self.filter_all_partitions,
@@ -78,7 +78,7 @@ class JobFilterWidget(urwid.WidgetWrap):
             ]
         )
 
-        w = widgets.FancyLineBox(f, "Filter")
+        w = widgets.FancyLineBox(w, "Filter")
 
         super().__init__(w)
 
