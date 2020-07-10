@@ -246,6 +246,7 @@ class JobsTab(object):
         jobs_widgets = []
         for job in jobs:
             texts = [
+                urwid.Text("", wrap="ellipsis"),
                 urwid.Text(job.job_id, wrap="ellipsis"),
                 urwid.Text(job.user, wrap="ellipsis"),
                 urwid.Text(job.name, wrap="ellipsis"),
