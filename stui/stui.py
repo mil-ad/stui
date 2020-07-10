@@ -60,6 +60,52 @@ class JobQueueWidget(urwid.WidgetWrap):
         super().__init__(w)
 
 
+class JobFilterWidget(urwid.WidgetWrap):
+    def __init__(self):
+
+        self.filter_all_partitions = FancyCheckBox("All Partitions")
+        self.filter_my_jobs = FancyCheckBox("My Jobs")
+        self.filter_running = FancyCheckBox("Running")
+        self.filter_job_name = urwid.Edit()
+        self.filter_node_name = urwid.Edit()
+
+        f = urwid.Pile(
+            [
+                urwid.Divider(),
+                self.filter_all_partitions,
+                self.filter_my_jobs,
+                self.filter_running,
+                FancyCheckBox("Use GPU"),
+                FancyCheckBox("Interactive"),
+                urwid.Divider(),
+                urwid.Text("Job Name:"),
+                urwid.LineBox(self.filter_job_name),
+                urwid.Divider(),
+                urwid.Text("Node Name:"),
+                urwid.LineBox(self.filter_node_name),
+            ]
+        )
+
+        w = FancyLineBox(f, "Filter")
+
+        super().__init__(w)
+
+    def all_partitions_selected(self):
+        return self.filter_all_partitions.get_state()
+
+    def my_jobs_selected(self):
+        return self.filter_my_jobs.get_state()
+
+    def running_jobs_selected(self):
+        return self.filter_running.get_state()
+
+    def job_name_filter(self):
+        return self.filter_job_name.get_edit_text()
+
+    def node_name_filter(self):
+        return self.filter_node_name.get_edit_text()
+
+
 class JobsTab(object):
 
     STATE_ATTR_MAPPING = {
@@ -97,9 +143,9 @@ class JobsTab(object):
         self.qpanel = JobQueueWidget()
         self.walker = self.qpanel.walker  # FIXME
 
-        fpanel = self.filter_panel()
+        self.fpanel = JobFilterWidget()
         apanel = self.action_panel()
-        right_col = urwid.Pile([("pack", fpanel), apanel])
+        right_col = urwid.Pile([("pack", self.fpanel), apanel])
 
         self.view = urwid.Columns(
             [("weight", 80, self.qpanel), ("weight", 20, right_col)], dividechars=1
@@ -166,61 +212,36 @@ class JobsTab(object):
 
         return FancyLineBox(f, "Actions")
 
-    def filter_panel(self):
-
-        self.filter_all_partitions = FancyCheckBox("All Partitions")
-        self.filter_my_jobs = FancyCheckBox("My Jobs")
-        self.filter_running = FancyCheckBox("Running")
-        self.filter_job_name = urwid.Edit()
-        self.filter_node_name = urwid.Edit()
-
-        f = urwid.Pile(
-            [
-                urwid.Divider(),
-                self.filter_all_partitions,
-                self.filter_my_jobs,
-                self.filter_running,
-                FancyCheckBox("Use GPU"),
-                FancyCheckBox("Interactive"),
-                urwid.Divider(),
-                urwid.Text("Job Name:"),
-                urwid.LineBox(self.filter_job_name),
-                urwid.Divider(),
-                urwid.Text("Node Name:"),
-                urwid.LineBox(self.filter_node_name),
-            ]
-        )
-
-        return FancyLineBox(f, "Filter")
-
     def filter_jobs(self, jobs):
 
         all_partitions_filter = (
             lambda j: True
-            if self.filter_all_partitions.get_state()
+            if self.fpanel.all_partitions_selected()
             else j.partition in self.cluster.my_partitions
         )  ## TODO: should be a method in backend
 
         my_job_filter = (
             lambda j: True
-            if not self.filter_my_jobs.get_state()
+            if not self.fpanel.my_jobs_selected()
             else j.user == self.cluster.me
         )
 
         running_filter = (
-            lambda j: True if not self.filter_running.get_state() else j.is_running()
+            lambda j: True
+            if not self.fpanel.running_jobs_selected()
+            else j.is_running()
         )
 
         job_name_filter = (
             lambda j: True
-            if self.filter_job_name.get_edit_text() == ""
-            else self.filter_job_name.get_edit_text() in j.name
+            if self.fpanel.job_name_filter() == ""
+            else self.fpanel.job_name_filter() in j.name
         )
 
         node_name_filter = (
             lambda j: True
-            if self.filter_node_name.get_edit_text() == ""
-            else self.filter_node_name.get_edit_text() in ",".join(j.nodes)
+            if self.fpanel.node_name_filter() == ""
+            else self.fpanel.node_name_filter() in ",".join(j.nodes)
         )
 
         filters = (
