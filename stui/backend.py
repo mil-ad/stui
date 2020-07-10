@@ -99,6 +99,10 @@ class Cluster(object):
         self.run_command(f"scancel -u {self.me}")
 
 
+    def get_name(self):
+        return self.config["ClusterName"]
+
+
 class Job(object):
     def __init__(self, string):
         super().__init__()

@@ -458,13 +458,9 @@ class StuiWidget(urwid.WidgetWrap):
             [
                 urwid.Text("stui", align="left"),
                 urwid.Text(
-                    [
-                        (None, "Cluster:"),
-                        ("magenta", self.cluster.config["ClusterName"]),
-                    ],
+                    [(None, "Cluster:"), ("magenta", self.cluster.get_name())],
                     align="center",
                 ),
-                # urwid.Text(self.cluster.config["ClusterName"], align="center"),
                 self.header_time,
             ]
         )
