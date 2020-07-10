@@ -39,20 +39,15 @@ class JobQueueWidget(urwid.WidgetWrap):
         ]
 
         header_w = [
-            (
-                *weight,
-                urwid.Padding(urwid.AttrMap(urwid.Text(c, wrap="ellipsis"), "bold")),
-            )
+            (*weight, urwid.Padding(urwid.Text(c, wrap="ellipsis")),)
             for c, weight in zip(column_labels, self.width_weights)
         ]
         header_w = urwid.Columns(header_w)
 
         self.walker = urwid.SimpleFocusListWalker([])
-        lb = widgets.FancyListBox(self.walker)
-
-        w = urwid.Frame(lb, header_w)
-
-        w = widgets.FancyLineBox(w, "Queue",)
+        w = widgets.FancyListBox(self.walker)
+        w = urwid.Frame(w, header_w)
+        w = widgets.FancyLineBox(w, "Queue")
 
         super().__init__(w)
 
