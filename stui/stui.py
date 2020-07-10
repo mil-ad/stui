@@ -106,6 +106,78 @@ class JobFilterWidget(urwid.WidgetWrap):
         return self.filter_node_name.get_edit_text()
 
 
+class JobActionsWidget(urwid.WidgetWrap):
+
+    signals = [
+        "cancel_all",
+        "cancel_newest",
+        "cancel_oldest",
+        "cancel_selected",
+        "attach_to_selected",
+    ]
+
+    def __init__(self):
+
+        self.nice_spinbutton = widgets.SpinButton(
+            min=None, max=None, start=" ", step=1, label="Nice:"
+        )
+
+        self.throttle_spinbutton = widgets.SpinButton(
+            min=1, max=None, start=" ", step=1, label="Throttle:"
+        )
+
+        self.attach = widgets.FancyButton("Attach", self._relay_signals)
+        self.cancel_all = widgets.FancyButton("Cancel All", self._relay_signals)
+        self.cancel_mine = widgets.FancyButton("Cancel", self._relay_signals)
+        self.cancel_newest = widgets.FancyButton("Cancel Newest", self._relay_signals)
+        self.cancel_oldest = widgets.FancyButton("Cancel Oldest", self._relay_signals)
+
+        w = urwid.Pile(
+            [
+                urwid.Divider(),
+                urwid.Text("Selected Job(s):"),
+                self.nice_spinbutton,
+                self.throttle_spinbutton,
+                urwid.Columns(
+                    [("pack", self.cancel_mine), ("pack", self.attach)], dividechars=1
+                ),
+                urwid.Divider(),
+                urwid.Text("My Jobs:"),
+                urwid.Padding(self.cancel_all, width="pack"),
+                urwid.Padding(self.cancel_newest, width="pack"),
+                urwid.Padding(self.cancel_oldest, width="pack"),
+            ]
+        )
+        w = urwid.Filler(w, valign="top")
+        w = widgets.FancyLineBox(w, "Actions")
+
+        super().__init__(w)
+
+    def set_nice(self, value):
+        self.nice_spinbutton.set_value(value)
+
+    def enable_throttle(self):
+        self.throttle_spinbutton.enable()
+
+    def disable_throttle(self):
+        self.throttle_spinbutton.disable()
+
+    def set_throttle_value(self, value):
+        self.throttle_spinbutton.set_value(str(value))
+
+    def _relay_signals(self, src):
+        if src is self.attach:
+            self._emit("attach_to_selected")
+        elif src is self.cancel_all:
+            self._emit("cancel_all")
+        elif src is self.cancel_mine:
+            self._emit("cancel_selected")
+        elif src is self.cancel_newest:
+            self._emit("cancel_newest")
+        elif src is self.cancel_oldest:
+            self._emit("cancel_oldest")
+
+
 class JobsTab(object):
 
     STATE_ATTR_MAPPING = {
@@ -144,8 +216,8 @@ class JobsTab(object):
         self.walker = self.qpanel.walker  # FIXME
 
         self.fpanel = JobFilterWidget()
-        apanel = self.action_panel()
-        right_col = urwid.Pile([("pack", self.fpanel), apanel])
+        self.apanel = JobActionsWidget()
+        right_col = urwid.Pile([("pack", self.fpanel), self.apanel])
 
         self.view = urwid.Columns(
             [("weight", 80, self.qpanel), ("weight", 20, right_col)], dividechars=1
@@ -155,7 +227,13 @@ class JobsTab(object):
 
         self.jobs_new = OrderedDict()
 
+        # TODO: Don't expose walker object directly?
         urwid.connect_signal(self.walker, "modified", self.on_jobs_modified)
+        urwid.connect_signal(self.apanel, "cancel_all", self.cancel_popup)
+        urwid.connect_signal(self.apanel, "cancel_newest", self.cancel_popup)
+        urwid.connect_signal(self.apanel, "cancel_oldest", self.cancel_popup)
+        urwid.connect_signal(self.apanel, "cancel_selected", self.cancel_popup)
+        urwid.connect_signal(self.apanel, "attach_to_selected", self.attach_popup)
 
     def on_jobs_modified(self):
         job = self.get_focus_job()
@@ -163,54 +241,13 @@ class JobsTab(object):
         if job is None:
             return
 
-        self.nice_spinbutton.set_value(job.nice)
+        self.apanel.set_nice(job.nice)
 
         if job.array_throttle is not None:
-            self.throttle_spinbutton.enable()
-            self.throttle_spinbutton.set_value(str(job.array_throttle))
+            self.apanel.enable_throttle()
+            self.apanel.set_throttle_value(job.array_throttle)
         else:
-            self.throttle_spinbutton.disable()
-
-    def action_panel(self):
-
-        self.nice_spinbutton = SpinButton(
-            min=None, max=None, start=" ", step=1, label="Nice:"
-        )
-
-        self.throttle_spinbutton = SpinButton(
-            min=1, max=None, start=" ", step=1, label="Throttle:"
-        )
-
-        attach = FancyButton("Attach")
-
-        cancel_all = FancyButton("Cancel All")
-        cancel_mine = FancyButton("Cancel")
-        cancel_newest = FancyButton("Cancel Newest")
-        cancel_oldest = FancyButton("Cancel Oldest")
-
-        urwid.connect_signal(cancel_mine, "click", self.cancel_popup, None)
-        urwid.connect_signal(attach, "click", self.attach_popup, None)
-        urwid.connect_signal(cancel_all, "click", self.cancel_popup, None)
-        urwid.connect_signal(cancel_newest, "click", self.cancel_popup, None)
-        urwid.connect_signal(cancel_oldest, "click", self.cancel_popup, None)
-
-        f = urwid.Pile(
-            [
-                urwid.Divider(),
-                urwid.Text("Selected Job(s):"),
-                self.nice_spinbutton,
-                self.throttle_spinbutton,
-                urwid.Columns([("pack", cancel_mine), ("pack", attach)], dividechars=1),
-                urwid.Divider(),
-                urwid.Text("My Jobs:"),
-                urwid.Padding(cancel_all, width="pack"),
-                urwid.Padding(cancel_newest, width="pack"),
-                urwid.Padding(cancel_oldest, width="pack"),
-            ]
-        )
-        f = urwid.Filler(f, valign="top")
-
-        return FancyLineBox(f, "Actions")
+            self.apanel.disable_throttle()
 
     def filter_jobs(self, jobs):
 
