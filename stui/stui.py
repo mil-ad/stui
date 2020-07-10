@@ -2,7 +2,6 @@ import argparse
 from datetime import datetime
 
 import urwid
-from urwid.widget import Divider
 
 from stui import backend
 from stui.widgets import *
