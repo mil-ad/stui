@@ -13,27 +13,6 @@ UPDATE_INTERVAL = 1
 global_loop = None  # FIXME
 
 
-
-def job_context_menu():
-    cancel_job = urwid.Button("Cancel Job")
-    back_button = urwid.Button("Back")
-
-    x = urwid.Pile([cancel_job, back_button])
-
-    x = urwid.Overlay(
-        x,
-        urwid.SolidFill("\N{MEDIUM SHADE}"),
-        align="center",
-        width=("relative", 60),
-        valign="middle",
-        height=("relative", 60),
-        min_width=20,
-        min_height=9,
-    )
-
-    return x
-
-
 class JobsTab(object):
 
     STATE_ATTR_MAPPING = {
