@@ -282,7 +282,8 @@ class JobsTab(object):
         )
 
         for f in filters:
-            jobs = list(filter(f, jobs))
+            jobs = filter(f, jobs)
+        jobs = list(jobs)
 
         return jobs
 
