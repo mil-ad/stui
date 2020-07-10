@@ -49,33 +49,6 @@ class FancyCheckBox(urwid.CheckBox):
 
 
 class FancyButton(urwid.WidgetWrap):
-    def __init__(self, label, on_press=None, user_data=None, padding_len=1):
-        padding = " " * padding_len
-        border = "─" * (len(label) + padding_len * 2)
-        # cursor_position = len(border) + padding_size
-
-        w = urwid.Text(
-            "╭" + border + "╮\n│" + padding + label + padding + "│\n╰" + border + "╯"
-        )
-        w = urwid.AttrMap(w, "", "active_tab_label")
-
-        # here is a lil hack: use a hidden button for evt handling
-        # TODO:
-        self._hidden_btn = urwid.Button("hidden %s" % label, on_press, user_data)
-
-        super().__init__(w)
-
-    def selectable(self):
-        return True
-
-    def keypress(self, *args, **kw):
-        return self._hidden_btn.keypress(*args, **kw)
-
-    def mouse_event(self, *args, **kw):
-        return self._hidden_btn.mouse_event(*args, **kw)
-
-
-class FancyButton(urwid.WidgetWrap):
     signals = ["click"]
 
     def __init__(self, label, on_press=None, user_data=None, padding_len=1):
