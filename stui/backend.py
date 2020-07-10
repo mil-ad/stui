@@ -133,10 +133,4 @@ class Job(object):
         return f"Job {self.job_id} - State{self.state}"
 
     def is_running(self):
-        return self.state == "Running"
-
-
-if __name__ == "__main__":
-    jobs = get_jobs()
-    for j in jobs:
-        print(j)
+        return self.state == "RUNNING"
