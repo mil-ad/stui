@@ -191,7 +191,6 @@ class JobsTab(object):
                 urwid.LineBox(self.filter_node_name),
             ]
         )
-        # f = urwid.Filler(f, valign="top")
 
         return FancyLineBox(f, "Filter")
 
