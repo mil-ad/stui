@@ -506,7 +506,7 @@ class AdminsTab(object):
         self.view = FancyLineBox(w, "Admin")
 
 
-class AppWidget(urwid.WidgetWrap):
+class StuiWidget(urwid.WidgetWrap):
     def __init__(self, cluster):
 
         self.cluster = cluster
@@ -551,7 +551,7 @@ class AppWidget(urwid.WidgetWrap):
         self.jobs_tab.refresh()
 
 
-class SlurmtopApp(object):
+class StuiApp(object):
     def __init__(self, args):
         super().__init__()
 
@@ -576,7 +576,7 @@ class SlurmtopApp(object):
             ("highlight", "black", "dark blue"),
         ]
 
-        self.w = AppWidget(self.cluster)
+        self.w = StuiWidget(self.cluster)
 
     def run(self):
 
@@ -614,7 +614,7 @@ class SlurmtopApp(object):
 
 
 def parse_args():
-    parser = argparse.ArgumentParser(description="slurm-tui")
+    parser = argparse.ArgumentParser(description="stui")
 
     parser.add_argument(
         "--remote",
@@ -629,7 +629,7 @@ def parse_args():
 
 def main():
     args = parse_args()
-    SlurmtopApp(args).run()
+    StuiApp(args).run()
 
 
 if __name__ == "__main__":
