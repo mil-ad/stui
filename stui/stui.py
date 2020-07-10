@@ -13,70 +13,11 @@ UPDATE_INTERVAL = 1
 global_loop = None  # FIXME
 
 
-class JobsTab(object):
-
-    STATE_ATTR_MAPPING = {
-        "Boot Fail": ["", ""],
-        "Cancelled": ["", ""],
-        "Completed": ["", ""],
-        "Configuring": ["", ""],
-        "Completing": ["", ""],
-        "Deadline": ["", ""],
-        "Failed": ["", ""],
-        "Node Fail": ["", ""],
-        "Out Of Memory": ["", ""],
-        "Pending": ["job_state_pending", ""],
-        "Preempted": ["", ""],
-        "Running": ["job_state_running", ""],
-        "Resv Del Hold": ["", ""],
-        "Requeue Fed": ["", ""],
-        "Requeue Hold": ["", ""],
-        "Requeued": ["", ""],
-        "Resizing": ["", ""],
-        "Revoked": ["", ""],
-        "Signaling": ["", ""],
-        "Special Exit": ["", ""],
-        "Stage Out": ["", ""],
-        "Stopped": ["", ""],
-        "Suspended": ["", ""],
-        "Timeout": ["", ""],
-    }
-
-    def __init__(self, cluster):
-        super().__init__()
-
-        self.cluster = cluster
-
-        self.qpanel = self.queue_panel()
-        fpanel = self.filter_panel()
-        apanel = self.action_panel()
-        right_col = urwid.Pile([("pack", fpanel), apanel])
-
-        self.view = urwid.Columns(
-            [("weight", 80, self.qpanel), ("weight", 20, right_col)], dividechars=1
-        )
-
-        self.view_placeholder = urwid.WidgetPlaceholder(self.view)
-
-        urwid.connect_signal(self.walker, "modified", self.on_jobs_modified)
-
-    def on_jobs_modified(self):
-        job = self.get_focus_job()
-
-        if job is None:
-            return
-
-        self.nice_spinbutton.set_value(job.nice)
-
-        if job.array_throttle is not None:
-            self.throttle_spinbutton.enable()
-            self.throttle_spinbutton.set_value(str(job.array_throttle))
-        else:
-            self.throttle_spinbutton.disable()
-
-    def queue_panel(self):
+class JobQueueWidget(urwid.WidgetWrap):
+    def __init__(self):
 
         column_labels = [
+            "",
             "Job ID",
             "User",
             "Name",
@@ -87,7 +28,9 @@ class JobsTab(object):
             "GRES",
             "Time",
         ]
+
         self.width_weights = [
+            (2,),
             (10,),
             ("weight", 1),
             ("weight", 3),
@@ -113,7 +56,75 @@ class JobsTab(object):
 
         w = urwid.Frame(lb, header_w)
 
-        return FancyLineBox(w, "Queue",)
+        w = FancyLineBox(w, "Queue",)
+
+        super().__init__(w)
+
+
+class JobsTab(object):
+
+    STATE_ATTR_MAPPING = {
+        "BOOT FAIL": ["", ""],
+        "CANCELLED": ["", ""],
+        "COMPLETED": ["", ""],
+        "CONFIGURING": ["", ""],
+        "COMPLETING": ["", ""],
+        "DEADLINE": ["", ""],
+        "FAILED": ["", ""],
+        "NODE FAIL": ["", ""],
+        "OUT OF MEMORY": ["", ""],
+        "PENDING": ["job_state_pending", ""],
+        "PREEMPTED": ["", ""],
+        "RUNNING": ["job_state_running", ""],
+        "RESV DEL HOLD": ["", ""],
+        "REQUEUE FED": ["", ""],
+        "REQUEUE HOLD": ["", ""],
+        "REQUEUED": ["", ""],
+        "RESIZING": ["", ""],
+        "REVOKED": ["", ""],
+        "SIGNALING": ["", ""],
+        "SPECIAL EXIT": ["", ""],
+        "STAGE OUT": ["", ""],
+        "STOPPED": ["", ""],
+        "SUSPENDED": ["", ""],
+        "TIMEOUT": ["", ""],
+    }
+
+    def __init__(self, cluster):
+        super().__init__()
+
+        self.cluster = cluster
+
+        self.qpanel = JobQueueWidget()
+        self.walker = self.qpanel.walker  # FIXME
+
+        fpanel = self.filter_panel()
+        apanel = self.action_panel()
+        right_col = urwid.Pile([("pack", fpanel), apanel])
+
+        self.view = urwid.Columns(
+            [("weight", 80, self.qpanel), ("weight", 20, right_col)], dividechars=1
+        )
+
+        self.view_placeholder = urwid.WidgetPlaceholder(self.view)
+
+        self.jobs_new = OrderedDict()
+
+        urwid.connect_signal(self.walker, "modified", self.on_jobs_modified)
+
+    def on_jobs_modified(self):
+        job = self.get_focus_job()
+
+        if job is None:
+            return
+
+        self.nice_spinbutton.set_value(job.nice)
+
+        if job.array_throttle is not None:
+            self.throttle_spinbutton.enable()
+            self.throttle_spinbutton.set_value(str(job.array_throttle))
+        else:
+            self.throttle_spinbutton.disable()
 
     def action_panel(self):
 
@@ -242,7 +253,7 @@ class JobsTab(object):
                 urwid.Text(job.user, wrap="ellipsis"),
                 urwid.Text(job.name, wrap="ellipsis"),
                 urwid.AttrMap(
-                    urwid.Text(job.state, wrap="ellipsis"),
+                    urwid.Text(job.state.title(), wrap="ellipsis"),
                     *self.STATE_ATTR_MAPPING[job.state],
                 ),
                 urwid.Text(job.partition, wrap="ellipsis"),
@@ -255,7 +266,7 @@ class JobsTab(object):
             w = SelectableColumns(
                 [
                     (*weight, urwid.Padding(t))
-                    for weight, t in zip(self.width_weights, texts)
+                    for weight, t in zip(self.qpanel.width_weights, texts)  # FIXME
                 ]
             )
 
