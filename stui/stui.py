@@ -9,9 +9,6 @@ import stui.widgets as widgets
 UPDATE_INTERVAL = 1
 
 
-global_loop = None  # FIXME
-
-
 class JobQueueWidget(urwid.WidgetWrap):
     def __init__(self):
 
@@ -224,8 +221,6 @@ class JobsTab(object):
         )
 
         self.view_placeholder = urwid.WidgetPlaceholder(self.view)
-
-        self.jobs_new = OrderedDict()
 
         # TODO: Don't expose walker object directly?
         urwid.connect_signal(self.walker, "modified", self.on_jobs_modified)
@@ -532,8 +527,6 @@ class StuiApp(object):
         self.loop = urwid.MainLoop(
             self.w, self.palette, unhandled_input=self.exit_on_q,
         )
-        global global_loop
-        global_loop = self.loop
 
         # self.loop.screen.set_terminal_properties(bright_is_bold=False)
 
