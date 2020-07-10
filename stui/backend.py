@@ -7,34 +7,6 @@ from time import sleep
 import fabric
 
 
-STATE_MAPPING = {
-    "BF": "Boot Fail",
-    "CA": "Cancelled",
-    "CD": "Completed",
-    "CF": "Configuring",
-    "CG": "Completing",
-    "DL": "Deadline",
-    "F": "Failed",
-    "NF": "Node Fail",
-    "OOM": "Out Of Memory",
-    "PD": "Pending",
-    "PR": "Preempted",
-    "R": "Running",
-    "RD": "Resv Del Hold",
-    "RF": "Requeue Fed",
-    "RH": "Requeue Hold",
-    "RQ": "Requeued",
-    "RS": "Resizing",
-    "RV": "Revoked",
-    "SI": "Signaling",
-    "SE": "Special Exit",
-    "SO": "Stage Out",
-    "ST": "Stopped",
-    "S": "Suspended",
-    "TO": "Timeout",
-}
-
-
 class Cluster(object):
     def __init__(self, remote):
         super().__init__()
@@ -108,7 +80,7 @@ class Cluster(object):
         return self.latest_jobs
 
     def _get_jobs(self):
-        cmd = 'squeue --all --format="%A|%C|%b|%F|%K|%j|%P|%r|%u|%y|%t|%M|%b|%N"'
+        cmd = 'squeue --all --format="%A|%C|%b|%F|%K|%j|%P|%r|%u|%y|%T|%M|%b|%N"'
         o = self.run_command(cmd)
 
         jobs = []
@@ -136,7 +108,7 @@ class Job(object):
         self.partition = string["PARTITION"]
         self.name = string["NAME"]
         self.user = string["USER"]
-        self.state = STATE_MAPPING[string["ST"]]
+        self.state = string["STATE"]
         self.time = string["TIME"]
         self.nice = string["NICE"]
         self.cpus = string["CPUS"]
