@@ -14,15 +14,11 @@ global_loop = None  # FIXME
 
 
 class Tab(urwid.WidgetWrap):
-    def __init__(
-        self, label, view, set_active_fn, set_active_next_fn, set_active_prev_fn
-    ):
+    def __init__(self, label, view, set_active_fn):
 
         self.view = view
 
         self.set_active_fn = set_active_fn
-        self.set_active_next_fn = set_active_next_fn
-        self.set_active_prev_fn = set_active_prev_fn
 
         w = urwid.Text(label)
         w = urwid.AttrMap(w, None, focus_map="focus_and_inactive_tab_label")
@@ -41,12 +37,8 @@ class Tab(urwid.WidgetWrap):
 
         if key == "enter" or key == " ":
             self.set_active_fn(self)
-        elif key == "tab":
-            self.set_active_next_fn()
-        elif key == "shift tab":
-            self.set_active_prev_fn()
         else:
-            return key
+            return super().keypress(size, key)
 
     def mouse_event(self, size, event, button, col, row, focus):
         if button == 1:
@@ -105,6 +97,14 @@ class Tabbed(urwid.WidgetWrap):
 
     def active_tab_idx(self):
         return self.tabs.index(self._w.contents[0])
+
+    def keypress(self, size, key):
+        if key == "tab":
+            self.set_active_next()
+        elif key == "shift tab":
+            self.set_active_prev()
+        else:
+            return super().keypress(size, key)
 
 
 def job_context_menu():
