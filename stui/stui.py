@@ -4,7 +4,7 @@ from datetime import datetime
 import urwid
 
 from stui import backend
-from stui.widgets import *
+import stui.widgets as widgets
 
 UPDATE_INTERVAL = 1
 
@@ -51,11 +51,11 @@ class JobQueueWidget(urwid.WidgetWrap):
         header_w = urwid.Columns(header_w)
 
         self.walker = urwid.SimpleFocusListWalker([])
-        lb = FancyListBox(self.walker)
+        lb = widgets.FancyListBox(self.walker)
 
         w = urwid.Frame(lb, header_w)
 
-        w = FancyLineBox(w, "Queue",)
+        w = widgets.FancyLineBox(w, "Queue",)
 
         super().__init__(w)
 
@@ -63,9 +63,9 @@ class JobQueueWidget(urwid.WidgetWrap):
 class JobFilterWidget(urwid.WidgetWrap):
     def __init__(self):
 
-        self.filter_all_partitions = FancyCheckBox("All Partitions")
-        self.filter_my_jobs = FancyCheckBox("My Jobs")
-        self.filter_running = FancyCheckBox("Running")
+        self.filter_all_partitions = widgets.FancyCheckBox("All Partitions")
+        self.filter_my_jobs = widgets.FancyCheckBox("My Jobs")
+        self.filter_running = widgets.FancyCheckBox("Running")
         self.filter_job_name = urwid.Edit()
         self.filter_node_name = urwid.Edit()
 
@@ -75,8 +75,8 @@ class JobFilterWidget(urwid.WidgetWrap):
                 self.filter_all_partitions,
                 self.filter_my_jobs,
                 self.filter_running,
-                FancyCheckBox("Use GPU"),
-                FancyCheckBox("Interactive"),
+                widgets.FancyCheckBox("Use GPU"),
+                widgets.FancyCheckBox("Interactive"),
                 urwid.Divider(),
                 urwid.Text("Job Name:"),
                 urwid.LineBox(self.filter_job_name),
@@ -86,7 +86,7 @@ class JobFilterWidget(urwid.WidgetWrap):
             ]
         )
 
-        w = FancyLineBox(f, "Filter")
+        w = widgets.FancyLineBox(f, "Filter")
 
         super().__init__(w)
 
@@ -218,7 +218,7 @@ class JobsTab(object):
             lambda j: True
             if self.fpanel.all_partitions_selected()
             else j.partition in self.cluster.my_partitions
-        )  ## TODO: should be a method in backend
+        )
 
         my_job_filter = (
             lambda j: True
@@ -281,7 +281,7 @@ class JobsTab(object):
                 urwid.Text(job.time, wrap="ellipsis"),
             ]
 
-            w = SelectableColumns(
+            w = widgets.SelectableColumns(
                 [
                     (*weight, urwid.Padding(t))
                     for weight, t in zip(self.qpanel.width_weights, texts)  # FIXME
@@ -316,8 +316,8 @@ class JobsTab(object):
 
     def cancel_popup(self, arg):
 
-        ok_button = FancyButton("OK")
-        cancel_button = FancyButton("Cancel")
+        ok_button = widgets.FancyButton("OK")
+        cancel_button = widgets.FancyButton("Cancel")
 
         buttons_col = urwid.Columns(
             [(10, cancel_button), (10, ok_button)], dividechars=1, focus_column=0
@@ -326,7 +326,7 @@ class JobsTab(object):
         urwid.connect_signal(ok_button, "click", self.close_popup, None)
         urwid.connect_signal(cancel_button, "click", self.close_popup, None)
 
-        w = FancyLineBox(
+        w = widgets.FancyLineBox(
             urwid.Pile(
                 [
                     urwid.Text("Are you sure you want to cancel selected job(s)?"),
@@ -358,13 +358,13 @@ class JobsTab(object):
 
         attach_fn = self.cluster.get_attach_fn(job)
 
-        cancel_button = FancyButton("Cancel")
+        cancel_button = widgets.FancyButton("Cancel")
         urwid.connect_signal(cancel_button, "click", self.close_popup, None)
 
         t = urwid.Terminal(attach_fn, encoding="utf-8")
         t_height = 40
 
-        w = FancyLineBox(
+        w = widgets.FancyLineBox(
             urwid.Pile(
                 [
                     urwid.BoxAdapter(t, t_height),
@@ -406,7 +406,7 @@ class NodesTab(object):
         w = urwid.Text("Nodes: Under Construction ...")
         w = urwid.Filler(w)
 
-        self.view = FancyLineBox(w, "Nodes")
+        self.view = widgets.FancyLineBox(w, "Nodes")
 
 
 class AdminsTab(object):
@@ -418,7 +418,7 @@ class AdminsTab(object):
         w = urwid.Text("Admin: Under Construction ...")
         w = urwid.Filler(w)
 
-        self.view = FancyLineBox(w, "Admin")
+        self.view = widgets.FancyLineBox(w, "Admin")
 
 
 class StuiWidget(urwid.WidgetWrap):
@@ -447,7 +447,7 @@ class StuiWidget(urwid.WidgetWrap):
         self.nodes_tab = NodesTab(self.cluster)
         self.admin_tab = AdminsTab(self.cluster)
 
-        tabbed = Tabbed(
+        tabbed = widgets.Tabbed(
             ["Jobs", "Nodes", "Admin"],
             [self.jobs_tab.get_view(), self.nodes_tab.view, self.admin_tab.view],
         )
