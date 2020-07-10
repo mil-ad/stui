@@ -287,7 +287,7 @@ class JobsTab(object):
 
         return jobs
 
-    def get_job_widgets(self, jobs):
+    def create_job_widgets(self, jobs):
 
         if len(jobs) == 0:
             return []
@@ -342,7 +342,7 @@ class JobsTab(object):
 
     def refresh(self):
         self.jobs = self.cluster.get_jobs()
-        self.walker[:] = self.get_job_widgets(self.jobs)
+        self.walker[:] = self.create_job_widgets(self.jobs)
 
     def cancel_popup(self, arg):
 
