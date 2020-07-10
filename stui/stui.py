@@ -4,6 +4,8 @@ from datetime import datetime
 import urwid
 
 from stui import backend
+from stui.nodes import NodesTab
+from stui.admin import AdminTab
 import stui.widgets as widgets
 
 UPDATE_INTERVAL = 1
@@ -468,7 +470,7 @@ class StuiWidget(urwid.WidgetWrap):
 
         self.jobs_tab = JobsTab(self.cluster)
         self.nodes_tab = NodesTab(self.cluster)
-        self.admin_tab = AdminsTab(self.cluster)
+        self.admin_tab = AdminTab(self.cluster)
 
         tabbed = widgets.Tabbed(
             ["Jobs", "Nodes", "Admin"],
