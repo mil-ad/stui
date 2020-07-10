@@ -14,11 +14,12 @@ global_loop = None  # FIXME
 
 
 class Tab(urwid.WidgetWrap):
-    def __init__(self, label, view, set_active_fn):
+
+    signals = ["click"]
+
+    def __init__(self, label, view):
 
         self.view = view
-
-        self.set_active_fn = set_active_fn
 
         w = urwid.Text(label)
         w = urwid.AttrMap(w, None, focus_map="focus_and_inactive_tab_label")
@@ -34,15 +35,14 @@ class Tab(urwid.WidgetWrap):
         return (15, 2)
 
     def keypress(self, size, key):
-
         if key == "enter" or key == " ":
-            self.set_active_fn(self)
+            self._emit("click")
         else:
             return super().keypress(size, key)
 
     def mouse_event(self, size, event, button, col, row, focus):
         if button == 1:
-            self.set_active_fn(self)
+            self._emit("click")
 
     def set_attr_active(self):
         self._w.set_attr_map({None: "active_tab_label"})
@@ -54,18 +54,12 @@ class Tab(urwid.WidgetWrap):
 
 
 class Tabbed(urwid.WidgetWrap):
-    def __init__(self, tabs):
+    def __init__(self, labels, views):
 
-        self.tabs = [
-            Tab(
-                label,
-                view,
-                self.set_active_tab,
-                self.set_active_next,
-                self.set_active_prev,
-            )
-            for label, view in tabs
-        ]
+        self.tabs = [Tab(label, view) for label, view in zip(labels, views)]
+
+        for tab in self.tabs:
+            urwid.connect_signal(tab, "click", self.set_active_tab)
 
         self.tab_bar = urwid.Columns([("pack", t) for t in self.tabs], dividechars=0)
 
@@ -77,7 +71,7 @@ class Tabbed(urwid.WidgetWrap):
         self.set_active_tab(self.tabs[0])
 
     def set_active_tab(self, tab):
-        current_options = self._w.contents[0][1]
+        current_options = self._w.contents[0][1]  # TODO: What is this again?
         self._w.contents[0] = (tab.view, current_options)
 
         self.tab_bar.focus_position = self.tabs.index(tab)
@@ -533,11 +527,8 @@ class StuiWidget(urwid.WidgetWrap):
         self.admin_tab = AdminsTab(self.cluster)
 
         tabbed = Tabbed(
-            [
-                ("Jobs", self.jobs_tab.get_view()),
-                ("Nodes", self.nodes_tab.view),
-                ("Admin", self.admin_tab.view),
-            ]
+            ["Jobs", "Nodes", "Admin"],
+            [self.jobs_tab.get_view(), self.nodes_tab.view, self.admin_tab.view],
         )
 
         w = urwid.Frame(tabbed, header)
