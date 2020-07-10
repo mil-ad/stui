@@ -10,7 +10,7 @@ __all__ = [
     "TabLineBox",
     "FancyListBox",
     "Tabbed",
-    "Tab"
+    "Tab",
 ]
 
 
