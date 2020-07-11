@@ -261,6 +261,10 @@ class JobsTab(object):
             else j.is_running()
         )
 
+        gpu_filter = (
+            lambda j: True if not self.fpanel.use_gpu_selected() else j.uses_gpu()
+        )
+
         job_name_filter = (
             lambda j: True
             if self.fpanel.job_name_filter() == ""
@@ -277,6 +281,7 @@ class JobsTab(object):
             all_partitions_filter,
             my_job_filter,
             running_filter,
+            gpu_filter,
             job_name_filter,
             node_name_filter,
         )
