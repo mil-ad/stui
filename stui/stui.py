@@ -15,6 +15,19 @@ class JobQueueWidget(urwid.WidgetWrap):
 
     signals = ["focus_changed"]
 
+    column_widths = [
+        (2,),
+        (10,),
+        ("weight", 1),
+        ("weight", 2),
+        (14,),
+        ("weight", 1),
+        ("weight", 1),
+        (6,),
+        ("weight", 1),
+        (11,),
+    ]
+
     def __init__(self):
 
         column_labels = [
@@ -30,22 +43,9 @@ class JobQueueWidget(urwid.WidgetWrap):
             "Time",
         ]
 
-        self.width_weights = [
-            (2,),
-            (10,),
-            ("weight", 1),
-            ("weight", 3),
-            (14,),
-            ("weight", 1),
-            ("weight", 1),
-            (5,),
-            ("weight", 1),
-            (11,),
-        ]
-
         header_w = [
             (*weight, urwid.Padding(urwid.Text(c, wrap="ellipsis")),)
-            for c, weight in zip(column_labels, self.width_weights)
+            for c, weight in zip(column_labels, self.column_widths)
         ]
         header_w = urwid.Columns(header_w)
 
@@ -339,7 +339,7 @@ class JobsTab(object):
             w = widgets.SelectableColumns(
                 [
                     (*weight, urwid.Padding(t))
-                    for weight, t in zip(self.qpanel.width_weights, texts)  # FIXME
+                    for weight, t in zip(JobQueueWidget.column_widths, texts)
                 ]
             )
 
