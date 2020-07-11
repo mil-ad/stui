@@ -60,8 +60,10 @@ class JobFilterWidget(urwid.WidgetWrap):
         self.filter_all_partitions = widgets.FancyCheckBox("All Partitions")
         self.filter_my_jobs = widgets.FancyCheckBox("My Jobs")
         self.filter_running = widgets.FancyCheckBox("Running")
+        self.filter_gpu = widgets.FancyCheckBox("Use GPU")
         self.filter_job_name = urwid.Edit()
         self.filter_node_name = urwid.Edit()
+        # self.filter_interactive = widgets.FancyCheckBox("Interactive")
 
         w = urwid.Pile(
             [
@@ -69,8 +71,8 @@ class JobFilterWidget(urwid.WidgetWrap):
                 self.filter_all_partitions,
                 self.filter_my_jobs,
                 self.filter_running,
-                widgets.FancyCheckBox("Use GPU"),
-                widgets.FancyCheckBox("Interactive"),
+                self.filter_gpu,
+                # self.filter_interactive,
                 urwid.Divider(),
                 urwid.Text("Job Name:"),
                 urwid.LineBox(self.filter_job_name),
@@ -92,6 +94,9 @@ class JobFilterWidget(urwid.WidgetWrap):
 
     def running_jobs_selected(self):
         return self.filter_running.get_state()
+
+    def use_gpu_selected(self):
+        return self.filter_gpu.get_state()
 
     def job_name_filter(self):
         return self.filter_job_name.get_edit_text()
