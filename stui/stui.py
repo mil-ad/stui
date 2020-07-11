@@ -12,6 +12,9 @@ UPDATE_INTERVAL = 1
 
 
 class JobQueueWidget(urwid.WidgetWrap):
+
+    signals = ["focus_changed"]
+
     def __init__(self):
 
         column_labels = [
@@ -51,7 +54,20 @@ class JobQueueWidget(urwid.WidgetWrap):
         w = urwid.Frame(w, header_w)
         w = widgets.FancyLineBox(w, "Queue")
 
+        self.walker.set_focus_changed_callback(self._focus_changed)
+
         super().__init__(w)
+
+    def update_job_widgets(self, job_widgets):
+        self.walker[:] = job_widgets
+
+    def get_focused_job_idx(self):
+        _, job_idx = self.walker.get_focus()
+        return job_idx
+
+    def _focus_changed(self, idx):
+        # TODO: Do something smarter with idx
+        urwid.emit_signal(self, "focus_changed")
 
 
 class JobFilterWidget(urwid.WidgetWrap):
@@ -212,7 +228,6 @@ class JobsTab(object):
         self.cluster = cluster
 
         self.qpanel = JobQueueWidget()
-        self.walker = self.qpanel.walker  # FIXME
 
         self.fpanel = JobFilterWidget()
         self.apanel = JobActionsWidget()
@@ -225,14 +240,14 @@ class JobsTab(object):
         self.view_placeholder = urwid.WidgetPlaceholder(self.view)
 
         # TODO: Don't expose walker object directly?
-        urwid.connect_signal(self.walker, "modified", self.on_jobs_modified)
+        urwid.connect_signal(self.qpanel, "focus_changed", self.on_jobs_focus_changed)
         urwid.connect_signal(self.apanel, "cancel_all", self.cancel_popup)
         urwid.connect_signal(self.apanel, "cancel_newest", self.cancel_popup)
         urwid.connect_signal(self.apanel, "cancel_oldest", self.cancel_popup)
         urwid.connect_signal(self.apanel, "cancel_selected", self.cancel_popup)
         urwid.connect_signal(self.apanel, "attach_to_selected", self.attach_popup)
 
-    def on_jobs_modified(self):
+    def on_jobs_focus_changed(self):
         job = self.get_focus_job()
 
         if job is None:
@@ -343,7 +358,7 @@ class JobsTab(object):
         return jobs_widgets
 
     def get_focus_job(self):
-        _, job_idx = self.walker.get_focus()
+        job_idx = self.qpanel.get_focused_job_idx()
 
         if job_idx is None:
             return None
@@ -352,7 +367,8 @@ class JobsTab(object):
 
     def refresh(self):
         self.jobs = self.cluster.get_jobs()
-        self.walker[:] = self.create_job_widgets(self.jobs)
+        job_widgets = self.create_job_widgets(self.jobs)
+        self.qpanel.update_job_widgets(job_widgets)
 
     def cancel_popup(self, arg):
 
