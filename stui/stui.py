@@ -167,6 +167,8 @@ class JobQueueWidget(urwid.WidgetWrap):
             else:
                 job_widget.set_active_focus()
 
+        # Force the focus to True even when it's not so that there's always a job
+        # highlighted.
         return self._wrapped_widget.render(size, focus=True)
 
 
