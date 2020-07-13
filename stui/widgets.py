@@ -296,3 +296,33 @@ class Tabbed(urwid.WidgetWrap):
             self.set_active_prev()
         else:
             return super().keypress(size, key)
+
+
+class ConfirmationWidget(urwid.WidgetWrap):
+    def __init__(self, msg, ok_handler, cancel_handler):
+
+        ok_button = FancyButton("OK", on_press=ok_handler, padding_len=3)
+        cancel_button = FancyButton("Cancel", on_press=cancel_handler)
+
+        # TODO: I don't understand why I can't apply one Padding with align="center" to
+        # align the whole Columns object.
+        buttons_col = urwid.Columns(
+            [
+                urwid.Padding(cancel_button, width="pack", align="right"),
+                urwid.Padding(ok_button, width="pack", align="left"),
+            ],
+            dividechars=1,
+            focus_column=0,
+        )
+
+        w = urwid.Pile(
+            [
+                ("pack", urwid.Text(msg)),
+                ("pack", urwid.Divider(" ")),
+                urwid.Padding(buttons_col, width="pack", align="center"),
+            ]
+        )
+
+        w = FancyLineBox(w)
+
+        super().__init__(w)

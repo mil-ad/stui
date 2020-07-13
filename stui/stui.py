@@ -409,24 +409,12 @@ class JobsTab(object):
 
     def cancel_popup(self, arg):
 
-        ok_button = widgets.FancyButton("OK")
-        cancel_button = widgets.FancyButton("Cancel")
+        # job_idx = self.qpanel.get_focused_job_idx()
 
-        buttons_col = urwid.Columns(
-            [(10, cancel_button), (10, ok_button)], dividechars=1, focus_column=0
-        )
-
-        urwid.connect_signal(ok_button, "click", self.close_popup, None)
-        urwid.connect_signal(cancel_button, "click", self.close_popup, None)
-
-        w = widgets.FancyLineBox(
-            urwid.Pile(
-                [
-                    urwid.Text("Are you sure you want to cancel selected job(s)?"),
-                    urwid.Divider(" "),
-                    urwid.Padding(buttons_col, align="center"),
-                ]
-            )
+        w = widgets.ConfirmationWidget(
+            "Are you sure you want to cancel selected job(s)?",
+            self.close_popup,
+            self.close_popup,
         )
 
         overlay = urwid.Overlay(
