@@ -549,8 +549,12 @@ class StuiApp(object):
 
         self.loop.screen.write(SWITCH_TO_ALTERNATE_BUFFER)
         self.register_refresh()
-        self.loop.run()
-        self.loop.screen.write(RESTORE_NORMAL_BUFFER)
+        try:
+            self.loop.run()
+        except KeyboardInterrupt:
+            pass
+        finally:
+            self.loop.screen.write(RESTORE_NORMAL_BUFFER)
 
     def exit_on_q(self, key):
         if key in ("q", "Q"):
