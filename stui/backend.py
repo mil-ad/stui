@@ -56,7 +56,7 @@ class Cluster(object):
     def get_config(self):
         o = self.run_command("scontrol show config")
 
-        pattern = "(\S+)\s*=(.*)"
+        pattern = r"(\S+)\s*=(.*)"
 
         config = {}
         for line in o[1:]:
@@ -124,7 +124,7 @@ class Job(object):
         self.is_array_job = False if self.array_task_id == "N/A" else True
 
         if self.is_array_job and "%" in self.array_task_id:
-            match = re.search("\d+%(\d+)", self.array_task_id)
+            match = re.search(r"\d+%(\d+)", self.array_task_id)
             self.array_throttle = match.group(1)
         else:
             self.array_throttle = None
