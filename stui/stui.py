@@ -1,5 +1,6 @@
 import argparse
 from datetime import datetime
+from collections import OrderedDict
 
 import urwid
 
@@ -9,6 +10,95 @@ from stui.admin import AdminTab
 import stui.widgets as widgets
 
 UPDATE_INTERVAL = 1
+
+
+class JobWidget(urwid.WidgetWrap):
+
+    STATE_ATTR_MAPPING = {
+        "BOOT FAIL": {None: ""},
+        "CANCELLED": {None: ""},
+        "COMPLETED": {None: ""},
+        "CONFIGURING": {None: ""},
+        "COMPLETING": {None: ""},
+        "DEADLINE": {None: ""},
+        "FAILED": {None: ""},
+        "NODE FAIL": {None: ""},
+        "OUT OF MEMORY": {None: ""},
+        "PENDING": {None: "job_state_pending"},
+        "PREEMPTED": {None: ""},
+        "RUNNING": {None: "job_state_running"},
+        "RESV DEL HOLD": {None: ""},
+        "REQUEUE FED": {None: ""},
+        "REQUEUE HOLD": {None: ""},
+        "REQUEUED": {None: ""},
+        "RESIZING": {None: ""},
+        "REVOKED": {None: ""},
+        "SIGNALING": {None: ""},
+        "SPECIAL EXIT": {None: ""},
+        "STAGE OUT": {None: ""},
+        "STOPPED": {None: ""},
+        "SUSPENDED": {None: ""},
+        "TIMEOUT": {None: ""},
+    }
+
+    def __init__(self, job):
+
+        self.columns = OrderedDict()
+        self.columns["selected"] = urwid.Text("", wrap="ellipsis")
+        self.columns["job_id"] = urwid.Text("", wrap="ellipsis")
+        self.columns["user"] = urwid.Text("", wrap="ellipsis")
+        self.columns["name"] = urwid.Text("", wrap="ellipsis")
+        self.columns["state"] = urwid.AttrMap(urwid.Text("", wrap="ellipsis"), None)
+        self.columns["partition"] = urwid.Text("", wrap="ellipsis")
+        self.columns["nodes"] = urwid.Text("", wrap="ellipsis")
+        self.columns["cpus"] = urwid.Text("", wrap="ellipsis")
+        self.columns["gres"] = urwid.Text("", wrap="ellipsis")
+        self.columns["time"] = urwid.Text("", wrap="ellipsis")
+
+        self.update_values(job)
+
+        w = widgets.SelectableColumns(
+            [
+                (*weight, urwid.Padding(c))
+                for weight, c in zip(
+                    JobQueueWidget.column_widths, self.columns.values()
+                )
+            ]
+        )
+        w = urwid.AttrMap(w, None)  # Details be handled by the JobQueueWidget
+
+        super().__init__(w)
+
+    def update_values(self, job):
+        self.columns["job_id"].set_text(job.job_id)
+        self.columns["user"].set_text(job.user)
+        self.columns["name"].set_text(job.name)
+        self.columns["state"]._original_widget.set_text(job.state.title())
+        self.columns["partition"].set_text(job.partition)
+        self.columns["nodes"].set_text(job.nodes)
+        self.columns["cpus"].set_text(job.cpus)
+        self.columns["gres"].set_text(job.gres)
+        self.columns["time"].set_text(job.time)
+
+        self.columns["state"].set_attr_map(self.STATE_ATTR_MAPPING[job.state])
+
+    def set_active_focus(self):
+        self._w.set_focus_map(
+            {
+                None: "highlight",
+                "job_state_running": "highlight",
+                "job_state_pending": "highlight",
+            }
+        )
+
+    def set_passive_focus(self):
+        self._w.set_focus_map(
+            {
+                None: "highlight_out_of_focus",
+                "job_state_running": "highlight_out_of_focus",
+                "job_state_pending": "highlight_out_of_focus",
+            },
+        )
 
 
 class JobQueueWidget(urwid.WidgetWrap):
@@ -73,21 +163,9 @@ class JobQueueWidget(urwid.WidgetWrap):
         job_widget, _ = self.walker.get_focus()
         if job_widget is not None:
             if not focus:
-                job_widget.set_focus_map(
-                    {
-                        None: "highlight_out_of_focus",
-                        "job_state_running": "highlight_out_of_focus",
-                        "job_state_pending": "highlight_out_of_focus",
-                    },
-                )
+                job_widget.set_passive_focus()
             else:
-                job_widget.set_focus_map(
-                    {
-                        None: "highlight",
-                        "job_state_running": "highlight",
-                        "job_state_pending": "highlight",
-                    }
-                )
+                job_widget.set_active_focus()
 
         return self._wrapped_widget.render(size, focus=True)
 
@@ -216,34 +294,6 @@ class JobActionsWidget(urwid.WidgetWrap):
 
 
 class JobsTab(object):
-
-    STATE_ATTR_MAPPING = {
-        "BOOT FAIL": ["", ""],
-        "CANCELLED": ["", ""],
-        "COMPLETED": ["", ""],
-        "CONFIGURING": ["", ""],
-        "COMPLETING": ["", ""],
-        "DEADLINE": ["", ""],
-        "FAILED": ["", ""],
-        "NODE FAIL": ["", ""],
-        "OUT OF MEMORY": ["", ""],
-        "PENDING": ["job_state_pending", ""],
-        "PREEMPTED": ["", ""],
-        "RUNNING": ["job_state_running", ""],
-        "RESV DEL HOLD": ["", ""],
-        "REQUEUE FED": ["", ""],
-        "REQUEUE HOLD": ["", ""],
-        "REQUEUED": ["", ""],
-        "RESIZING": ["", ""],
-        "REVOKED": ["", ""],
-        "SIGNALING": ["", ""],
-        "SPECIAL EXIT": ["", ""],
-        "STAGE OUT": ["", ""],
-        "STOPPED": ["", ""],
-        "SUSPENDED": ["", ""],
-        "TIMEOUT": ["", ""],
-    }
-
     def __init__(self, cluster):
         super().__init__()
 
@@ -338,36 +388,8 @@ class JobsTab(object):
 
         if len(jobs) == 0:
             return []
-
         jobs = self.filter_jobs(jobs)
-        jobs_widgets = []
-        for job in jobs:
-            texts = [
-                urwid.Text("", wrap="ellipsis"),
-                urwid.Text(job.job_id, wrap="ellipsis"),
-                urwid.Text(job.user, wrap="ellipsis"),
-                urwid.Text(job.name, wrap="ellipsis"),
-                urwid.AttrMap(
-                    urwid.Text(job.state.title(), wrap="ellipsis"),
-                    *self.STATE_ATTR_MAPPING[job.state],
-                ),
-                urwid.Text(job.partition, wrap="ellipsis"),
-                urwid.Text(job.nodes, wrap="ellipsis"),
-                urwid.Text(job.cpus, wrap="ellipsis"),
-                urwid.Text(job.gres, wrap="ellipsis"),
-                urwid.Text(job.time, wrap="ellipsis"),
-            ]
-
-            w = widgets.SelectableColumns(
-                [
-                    (*weight, urwid.Padding(t))
-                    for weight, t in zip(JobQueueWidget.column_widths, texts)
-                ]
-            )
-            w = urwid.AttrMap(w, None)  # Details be handled by the JobQueueWidget
-
-            jobs_widgets.append(w)
-
+        jobs_widgets = [JobWidget(j) for j in jobs]
         return jobs_widgets
 
     def get_focus_job(self):
