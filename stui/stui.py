@@ -69,6 +69,28 @@ class JobQueueWidget(urwid.WidgetWrap):
         # TODO: Do something smarter with idx
         urwid.emit_signal(self, "focus_changed")
 
+    def render(self, size, focus=False):
+        job_widget, _ = self.walker.get_focus()
+        if job_widget is not None:
+            if not focus:
+                job_widget.set_focus_map(
+                    {
+                        None: "highlight_out_of_focus",
+                        "job_state_running": "highlight_out_of_focus",
+                        "job_state_pending": "highlight_out_of_focus",
+                    },
+                )
+            else:
+                job_widget.set_focus_map(
+                    {
+                        None: "highlight",
+                        "job_state_running": "highlight",
+                        "job_state_pending": "highlight",
+                    }
+                )
+
+        return self._wrapped_widget.render(size, focus=True)
+
 
 class JobFilterWidget(urwid.WidgetWrap):
     def __init__(self):
@@ -342,16 +364,7 @@ class JobsTab(object):
                     for weight, t in zip(JobQueueWidget.column_widths, texts)
                 ]
             )
-
-            w = urwid.AttrMap(
-                w,
-                None,
-                focus_map={
-                    None: "reversed",
-                    "job_state_running": "reversed",
-                    "job_state_pending": "reversed",
-                },
-            )  # FIXME
+            w = urwid.AttrMap(w, None)  # Details be handled by the JobQueueWidget
 
             jobs_widgets.append(w)
 
