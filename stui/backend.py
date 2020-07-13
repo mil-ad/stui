@@ -134,3 +134,6 @@ class Job(object):
 
     def is_running(self):
         return self.state == "RUNNING"
+
+    def uses_gpu(self):
+        return "gpu" in self.gres
