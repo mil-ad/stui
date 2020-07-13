@@ -526,7 +526,8 @@ class StuiApp(object):
             ("reversed", "standout", ""),
             ("bold", "bold", ""),
             ("underline", "underline", ""),
-            ("highlight", "black", "dark blue"),
+            ("highlight", "black", "yellow", ""),
+            ("highlight_out_of_focus", "black", "brown", ""),
         ]
 
         self.w = StuiWidget(self.cluster)
