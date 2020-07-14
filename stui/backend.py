@@ -3,6 +3,7 @@ import re
 import shutil
 import threading
 from time import sleep
+import copy
 
 import fabric
 
@@ -12,16 +13,18 @@ class Cluster(object):
         super().__init__()
 
         self.use_fabric = True
+        self.remote = remote
 
         if not remote:
             if shutil.which("sinfo") is None:
                 raise SystemExit("Slurm binaries not found.")
         elif self.use_fabric:
             self.fabric_connection = fabric.Connection(remote)
+            self.fabric_connection.open()
 
         self.remote = remote
 
-        self.me = self.run_command("whoami")[0]  ## TODO
+        self.me = self.run_command("whoami")[0]  # TODO
 
         self.partitions = None
 
@@ -31,12 +34,26 @@ class Cluster(object):
 
         self.latest_jobs = []
         self.thread = threading.Thread(target=self.thread_fn, daemon=True)
+        self.lock = threading.Lock()
         self.thread.start()
 
     def thread_fn(self):
         while True:
-            self.latest_jobs = self._get_jobs()
-            sleep(1)
+            try:
+                latest_jobs = self._get_jobs()
+                self.lock.acquire()
+                try:
+                    self.latest_jobs = latest_jobs
+                finally:
+                    self.lock.release()
+                sleep(1)
+            except (
+                EOFError,
+                OSError,
+            ):
+                # TODO:: Where's the best place to do error handing
+                self.fabric_connection = fabric.Connection(self.remote)
+                self.fabric_connection.open()
 
     def run_command(self, cmd: str):
         if self.remote:
@@ -77,7 +94,13 @@ class Cluster(object):
 
     def get_jobs(self):
         # TODO Acquire a lock a return a clone?
-        return self.latest_jobs
+        self.lock.acquire()
+        try:
+            jobs_copy = copy.deepcopy(self.latest_jobs)
+        finally:
+            self.lock.release()
+
+        return jobs_copy
 
     def _get_jobs(self):
         cmd = 'squeue --all --format="%A|%C|%b|%F|%K|%j|%P|%r|%u|%y|%T|%M|%b|%N"'
