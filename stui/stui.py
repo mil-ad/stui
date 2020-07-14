@@ -437,12 +437,14 @@ class JobsTab(object):
         if job is None:
             assert False  # FIXME
 
-        attach_fn = self.cluster.get_attach_fn(job)
+        cmd = f"sattach {job.job_id}.0"
+        if self.cluster.remote:
+            cmd = f"ssh -T {self.cluster.remote} " + cmd
 
         cancel_button = widgets.FancyButton("Cancel")
         urwid.connect_signal(cancel_button, "click", self.close_popup, None)
 
-        t = urwid.Terminal(attach_fn, encoding="utf-8")
+        t = urwid.Terminal(cmd.split(), encoding="utf-8")
         t_height = 40
 
         w = widgets.FancyLineBox(
