@@ -72,10 +72,6 @@ class FancyButton(urwid.WidgetWrap):
     def sizing(self):
         return frozenset([FLOW])
 
-    def _repr_words(self):
-        # include button.label in repr(button)
-        return self.__super._repr_words() + [python3_repr(self.label)]
-
     def set_label(self, label):
         self._label.set_text(label)
 
@@ -150,11 +146,8 @@ class SpinButton(urwid.WidgetWrap):
         cols = [self.linebox, (3, self.plus), (3, self.minus)]
 
         if label is not None:
-            l = urwid.Text(
-                "\n" + label + " "
-            )  # FIXME: Remove the \n hack. Not sure why Filler doesn't work
-            # l = urwid.Filler(l, height=3)
-            cols = [("weight", 1, l)] + cols
+            # FIXME: Remove the \n hack. Not sure why Filler doesn't work
+            cols = [("weight", 1, urwid.Text(f"\n{label} "))] + cols
 
         w = urwid.Columns(cols)
         super().__init__(w)
@@ -164,7 +157,8 @@ class SpinButton(urwid.WidgetWrap):
         self.text.set_text(x)
 
     def disable(self):
-        # TODO: Why do I have to pass "" in one case and None in another? A bug in urwid?
+        # TODO: Why do I have to pass "" in one case and None in another?
+        #       Is this a bug in urwid?
         self.plus.set_attr_map({"": "disabled_tab_label"})
         self.minus.set_attr_map({"": "disabled_tab_label"})
         self.linebox.set_attr_map({None: "disabled_tab_label"})
