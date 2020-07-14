@@ -313,6 +313,8 @@ class JobsTab(object):
 
         self.view_placeholder = urwid.WidgetPlaceholder(self.view)
 
+        self.job_widgets_dict = {}
+
         # TODO: Don't expose walker object directly?
         urwid.connect_signal(self.qpanel, "focus_changed", self.on_jobs_focus_changed)
         urwid.connect_signal(self.apanel, "cancel_all", self.cancel_popup)
@@ -403,9 +405,28 @@ class JobsTab(object):
             return self.jobs[job_idx]
 
     def refresh(self):
-        self.jobs = self.cluster.get_jobs()
-        job_widgets = self.create_job_widgets(self.jobs)
-        self.qpanel.update_job_widgets(job_widgets)
+        self.jobs = self.filter_jobs(self.cluster.get_jobs())
+        # job_widgets = self.create_job_widgets(self.jobs)
+
+        job_widgets_ordered = []
+        job_widgets_dict = {}
+        for job in self.jobs:
+            try:
+                w = self.job_widgets_dict[job.job_id]
+                w.update_values(job)
+            except KeyError:
+                w = JobWidget(job)
+            finally:
+                job_widgets_ordered.append(w)
+                job_widgets_dict[job.job_id] = w
+
+        # I have to confirm this but I assume that the widgets living in
+        # self.job_widgets_dict in previous rounds for jobs that don't exist this time
+        # around will be garbage collected as soon as I set the self.job_widgets_dict to
+        # the new dictionary created in this function.
+        self.job_widgets_dict = job_widgets_dict
+
+        self.qpanel.update_job_widgets(job_widgets_ordered)
 
     def cancel_popup(self, arg):
 
