@@ -67,6 +67,8 @@ class JobWidget(urwid.WidgetWrap):
         )
         w = urwid.AttrMap(w, None)  # Details be handled by the JobQueueWidget
 
+        self.selected = False
+
         super().__init__(w)
 
     def update_values(self, job):
@@ -99,6 +101,22 @@ class JobWidget(urwid.WidgetWrap):
                 "job_state_pending": "highlight_out_of_focus",
             },
         )
+
+    def keypress(self, size, key):
+        if key == " ":
+            self.toggle_select()
+        else:
+            return super().keypress(size, key)
+
+    def toggle_select(self):
+        if not self.selected:
+            self.columns["selected"].set_text("✘")
+        else:
+            self.columns["selected"].set_text("")
+        self.selected = not self.selected
+
+    def is_selected(self):
+        return self.selected
 
 
 class JobQueueWidget(urwid.WidgetWrap):
@@ -154,6 +172,10 @@ class JobQueueWidget(urwid.WidgetWrap):
     def get_focused_job_idx(self):
         _, job_idx = self.walker.get_focus()
         return job_idx
+
+    def get_selected_job_idices(self):
+        indices = [idx for idx, w in enumerate(self.walker) if w.is_selected()]
+        return indices
 
     def _focus_changed(self, idx):
         # TODO: Do something smarter with idx
