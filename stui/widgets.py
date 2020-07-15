@@ -11,6 +11,8 @@ __all__ = [
     "FancyListBox",
     "Tabbed",
     "Tab",
+    "MessageWidget",
+    "ConfirmationWidget",
 ]
 
 
@@ -293,9 +295,11 @@ class Tabbed(urwid.WidgetWrap):
 
 
 class ConfirmationWidget(urwid.WidgetWrap):
-    def __init__(self, msg, ok_handler, cancel_handler):
+    def __init__(self, msg, ok_handler, cancel_handler, user_data=None):
 
-        ok_button = FancyButton("OK", on_press=ok_handler, padding_len=3)
+        ok_button = FancyButton(
+            "OK", on_press=ok_handler, padding_len=3, user_data=user_data
+        )
         cancel_button = FancyButton("Cancel", on_press=cancel_handler)
 
         # TODO: I don't understand why I can't apply one Padding with align="center" to
@@ -318,5 +322,23 @@ class ConfirmationWidget(urwid.WidgetWrap):
         )
 
         w = FancyLineBox(w)
+
+        super().__init__(w)
+
+
+class MessageWidget(urwid.WidgetWrap):
+    def __init__(self, msg, ok_handler, title=""):
+        ok_button = FancyButton("OK", on_press=ok_handler, padding_len=3)
+
+        w = urwid.Pile(
+            [
+                ("pack", urwid.Divider(" ")),
+                ("pack", urwid.Text(msg)),
+                ("pack", urwid.Divider(" ")),
+                urwid.Padding(ok_button, width="pack", align="center"),
+            ]
+        )
+
+        w = FancyLineBox(w, title)
 
         super().__init__(w)
