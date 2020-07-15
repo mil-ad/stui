@@ -84,22 +84,14 @@ class JobWidget(urwid.WidgetWrap):
 
         self.columns["state"].set_attr_map(self.STATE_ATTR_MAPPING[job.state])
 
-    def set_active_focus(self):
-        self._w.set_focus_map(
-            {
-                None: "highlight",
-                "job_state_running": "highlight",
-                "job_state_pending": "highlight",
-            }
-        )
+    def set_selected_attr(self, in_focus):
+        if in_focus:
+            attr = "highlight"
+        else:
+            attr = "highlight_out_of_focus"
 
-    def set_passive_focus(self):
         self._w.set_focus_map(
-            {
-                None: "highlight_out_of_focus",
-                "job_state_running": "highlight_out_of_focus",
-                "job_state_pending": "highlight_out_of_focus",
-            },
+            {None: attr, "job_state_running": attr, "job_state_pending": attr}
         )
 
     def keypress(self, size, key):
@@ -184,10 +176,7 @@ class JobQueueWidget(urwid.WidgetWrap):
     def render(self, size, focus=False):
         job_widget, _ = self.walker.get_focus()
         if job_widget is not None:
-            if not focus:
-                job_widget.set_passive_focus()
-            else:
-                job_widget.set_active_focus()
+            job_widget.set_selected_attr(focus)
 
         # Force the focus to True even when it's not so that there's always a job
         # highlighted.
