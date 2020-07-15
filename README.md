@@ -3,11 +3,35 @@
 [![Follow @notmilad](https://img.shields.io/twitter/follow/notmilad?style=social)](https://twitter.com/notmilad)
 
 # stui
+A Slurm dashboard for the terminal.
 
-A Slurm client for the terminal written in Python.
+<img src="screenshot.png" alt="stui screenshot" width="50%"/>
+
+## Features
+* Connecting to remote Slurm clusters via SSH
+* Quickly filter jobs based on commonly-used criteria
+* Cancel, attach to, or modify properties of selected jobs.
 
 ## Installation
 
-```
+```shell
 $ pip install stui
 ```
+
+## Usage
+
+On a machine that's part of a Slurm cluster simply fire up `stui`:
+
+```shell
+$ stui
+```
+
+To connect to a remote Slurm cluster via SSH:
+
+```shell
+$ stui --remote REMOTE_MACHINE
+```
+
+`REMOTE_MACHINE` format is `USER@SERVER_ADDR` or simply the `Host` name specified in the SSH config file.
+
+N.B. there's currently no support for authenticating SSH connections with passwords. SSH keys must have been exchanged for the remote functionality to work.
