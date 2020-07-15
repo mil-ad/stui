@@ -205,7 +205,7 @@ class JobFilterWidget(urwid.WidgetWrap):
         self.filter_node_name = urwid.Edit()
         # self.filter_interactive = widgets.FancyCheckBox("Interactive")
 
-        w = urwid.Pile(
+        self.pile = urwid.Pile(
             [
                 urwid.Divider(),
                 self.filter_all_partitions,
@@ -222,7 +222,7 @@ class JobFilterWidget(urwid.WidgetWrap):
             ]
         )
 
-        w = widgets.FancyLineBox(w, "Filter")
+        w = widgets.FancyLineBox(self.pile, "Filter")
 
         super().__init__(w)
 
@@ -243,6 +243,10 @@ class JobFilterWidget(urwid.WidgetWrap):
 
     def node_name_filter(self):
         return self.filter_node_name.get_edit_text()
+
+    def set_focus_to_job_name_box(self):
+        # TODO: This looks very hacky!
+        self.pile.focus_position = 7
 
 
 class JobActionsWidget(urwid.WidgetWrap):
@@ -317,21 +321,49 @@ class JobActionsWidget(urwid.WidgetWrap):
             self._emit("cancel_oldest")
 
 
+class JobTabWidget(urwid.WidgetWrap):
+    def __init__(self):
+
+        self.qpanel = JobQueueWidget()
+        self.fpanel = JobFilterWidget()
+        self.apanel = JobActionsWidget()
+        right_col = urwid.Pile([("pack", self.fpanel), self.apanel])
+
+        w = urwid.Columns(
+            [("weight", 80, self.qpanel), ("weight", 20, right_col)], dividechars=1
+        )
+
+        super().__init__(w)
+
+    def keypress(self, size, key):
+        if key == "/":
+            # TODO: This looks very hacky.
+            self.fpanel.set_focus_to_job_name_box()
+            self._wrapped_widget.set_focus_path([1, 0])
+        else:
+            return super().keypress(size, key)
+
+
 class JobsTab(object):
     def __init__(self, cluster):
         super().__init__()
 
         self.cluster = cluster
 
-        self.qpanel = JobQueueWidget()
+        # self.qpanel = JobQueueWidget()
+        # self.fpanel = JobFilterWidget()
+        # self.apanel = JobActionsWidget()
+        # right_col = urwid.Pile([("pack", self.fpanel), self.apanel])
 
-        self.fpanel = JobFilterWidget()
-        self.apanel = JobActionsWidget()
-        right_col = urwid.Pile([("pack", self.fpanel), self.apanel])
+        # self.view = urwid.Columns(
+        #     [("weight", 80, self.qpanel), ("weight", 20, right_col)], dividechars=1
+        # )
 
-        self.view = urwid.Columns(
-            [("weight", 80, self.qpanel), ("weight", 20, right_col)], dividechars=1
-        )
+        self.view = JobTabWidget()
+        # TODO: This is hacky - I don't like it
+        self.qpanel = self.view.qpanel
+        self.fpanel = self.view.fpanel
+        self.apanel = self.view.apanel
 
         self.view_placeholder = urwid.WidgetPlaceholder(self.view)
 
