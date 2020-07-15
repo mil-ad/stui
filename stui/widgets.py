@@ -175,7 +175,7 @@ class SelectableColumns(urwid.Columns):
         return True
 
     def keypress(self, size, key):
-        return key
+        return super().keypress(size, key)
 
 
 class TabLineBox(urwid.LineBox):
