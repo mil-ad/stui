@@ -204,6 +204,8 @@ class JobFilterWidget(urwid.WidgetWrap):
         self.filter_job_name = urwid.Edit()
         self.filter_node_name = urwid.Edit()
         # self.filter_interactive = widgets.FancyCheckBox("Interactive")
+        # self.select_all = widgets.FancyButton("Select All")
+        # self.deselect_all = widgets.FancyButton("Deselect All")
 
         self.pile = urwid.Pile(
             [
@@ -219,6 +221,11 @@ class JobFilterWidget(urwid.WidgetWrap):
                 urwid.Divider(),
                 urwid.Text("Node Name:"),
                 urwid.LineBox(self.filter_node_name),
+                urwid.Divider(),
+                # urwid.Columns(
+                #     [("pack", self.select_all), ("pack", self.deselect_all)],
+                #     dividechars=1,
+                # ),
             ]
         )
 
