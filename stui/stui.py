@@ -376,7 +376,6 @@ class JobsTab(object):
 
         self.job_widgets_dict = {}
 
-        # TODO: Don't expose walker object directly?
         urwid.connect_signal(self.qpanel, "focus_changed", self.on_jobs_focus_changed)
         urwid.connect_signal(self.apanel, "cancel_all", self.cancel_popup)
         urwid.connect_signal(self.apanel, "cancel_newest", self.cancel_popup)
