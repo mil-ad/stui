@@ -306,15 +306,15 @@ class JobActionsWidget(urwid.WidgetWrap):
 
     def _relay_signals(self, src):
         if src is self.attach:
-            self._emit("attach_to_selected")
+            urwid.emit_signal(self, "attach_to_selected")
         elif src is self.cancel_all:
-            self._emit("cancel_all")
+            urwid.emit_signal(self, "cancel_all")
         elif src is self.cancel_mine:
-            self._emit("cancel_selected")
+            urwid.emit_signal(self, "cancel_selected")
         elif src is self.cancel_newest:
-            self._emit("cancel_newest")
+            urwid.emit_signal(self, "cancel_newest")
         elif src is self.cancel_oldest:
-            self._emit("cancel_oldest")
+            urwid.emit_signal(self, "cancel_oldest")
 
 
 class JobTabWidget(urwid.WidgetWrap):
@@ -366,10 +366,10 @@ class JobsTab(object):
         self.job_widgets_dict = {}
 
         urwid.connect_signal(self.qpanel, "focus_changed", self.on_jobs_focus_changed)
-        urwid.connect_signal(self.apanel, "cancel_all", self.cancel_popup)
-        urwid.connect_signal(self.apanel, "cancel_newest", self.cancel_popup)
-        urwid.connect_signal(self.apanel, "cancel_oldest", self.cancel_popup)
-        urwid.connect_signal(self.apanel, "cancel_selected", self.cancel_popup)
+        urwid.connect_signal(self.apanel, "cancel_all", self.cancel_all_init)
+        urwid.connect_signal(self.apanel, "cancel_newest", self.cancel_newest_init)
+        urwid.connect_signal(self.apanel, "cancel_oldest", self.cancel_oldest_init)
+        urwid.connect_signal(self.apanel, "cancel_selected", self.cancel_selected_init)
         urwid.connect_signal(self.apanel, "attach_to_selected", self.attach_popup)
 
     def on_jobs_focus_changed(self):
@@ -477,16 +477,7 @@ class JobsTab(object):
 
         self.qpanel.update_job_widgets(job_widgets_ordered)
 
-    def cancel_popup(self, arg):
-
-        # job_idx = self.qpanel.get_focused_job_idx()
-
-        w = widgets.ConfirmationWidget(
-            "Are you sure you want to cancel selected job(s)?",
-            self.close_popup,
-            self.close_popup,
-        )
-
+    def show_popup(self, w):
         overlay = urwid.Overlay(
             urwid.Filler(w, valign="top"),
             self.view,
@@ -497,6 +488,68 @@ class JobsTab(object):
         )
 
         self.view_placeholder.original_widget = overlay
+
+    def close_popup(self, *args, **kwargs):
+        self.view_placeholder.original_widget = self.view
+
+    def show_message(self, msg, title=""):
+        w = widgets.MessageWidget(msg, self.close_popup, title)
+        self.show_popup(w)
+
+    def cancel_all_init(self):
+        w = widgets.ConfirmationWidget(
+            "Are you sure you want to cancel all your job(s)?",
+            self.cancel_all_finish,
+            self.close_popup,
+        )
+        self.show_popup(w)
+
+    def cancel_all_finish(self, *args, **kwargs):
+        self.cluster.cancel_my_jobs()
+        self.close_popup()
+
+    def cancel_newest_init(self):
+        w = widgets.ConfirmationWidget(
+            "Are you sure you want to cancel your newest job?",
+            self.cancel_newest_finish,
+            self.close_popup,
+        )
+        self.show_popup(w)
+
+    def cancel_newest_finish(self, *args, **kwargs):
+        self.cluster.cancel_my_newest_job()
+        self.close_popup()
+
+    def cancel_oldest_init(self):
+        w = widgets.ConfirmationWidget(
+            "Are you sure you want to cancel your oldest job?",
+            self.cancel_oldest_finish,
+            self.close_popup,
+        )
+        self.show_popup(w)
+
+    def cancel_oldest_finish(self, *args, **kwargs):
+        self.cluster.cancel_my_oldest_job()
+        self.close_popup()
+
+    def cancel_selected_init(self):
+        job_indices = self.qpanel.get_selected_job_idices()
+
+        if len(job_indices) == 0:
+            self.show_message("No jobs have been selected!", "Error")
+        else:
+            selected_jobs = [self.jobs[idx] for idx in job_indices]
+            w = widgets.ConfirmationWidget(
+                f"Are you sure you want to cancel selected {len(job_indices)} job(s)?",
+                self.cancel_selected_jobs_finish,
+                self.close_popup,
+                selected_jobs,
+            )
+            self.show_popup(w)
+
+    def cancel_selected_jobs_finish(self, event_origin, selected_jobs):
+        self.cluster.cancel_jobs(selected_jobs)
+        self.close_popup()
 
     def attach_popup(self, arg):
 
@@ -539,12 +592,6 @@ class JobsTab(object):
         )
 
         self.view_placeholder.original_widget = overlay
-
-    def close_popup(self, cancel):
-        if cancel:
-            pass
-
-        self.view_placeholder.original_widget = self.view
 
     def get_view(self):
         return self.view_placeholder
