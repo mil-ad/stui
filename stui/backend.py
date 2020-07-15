@@ -121,7 +121,6 @@ class Cluster(object):
     def cancel_my_jobs(self):
         self.run_command(f"scancel -u {self.me}")
 
-
     def get_name(self):
         return self.config["ClusterName"]
 
