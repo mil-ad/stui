@@ -120,6 +120,11 @@ class Cluster(object):
 
     def cancel_my_jobs(self):
         self.run_command(f"scancel -u {self.me}")
+    def cancel_my_newest_job(self):
+        pass
+
+    def cancel_my_oldest_job(self):
+        pass
 
     def get_name(self):
         return self.config["ClusterName"]
