@@ -551,7 +551,7 @@ class JobsTab(object):
         self.cluster.cancel_jobs(selected_jobs)
         self.close_popup()
 
-    def attach_popup(self, arg):
+    def attach_popup(self):
 
         # FIXME: The fixed height is a hack!
 
