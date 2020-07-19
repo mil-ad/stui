@@ -5,6 +5,7 @@ import re
 import shutil
 import subprocess
 import threading
+from queue import Queue
 from time import sleep
 
 import fabric
@@ -34,7 +35,9 @@ class Cluster(object):
 
         self.latest_jobs = []
         self.thread = threading.Thread(target=self._thread_fn, daemon=True)
+
         self.lock = threading.Lock()
+        self.requests = Queue()
 
     def connect(self, fd):
         self.fd = fd
@@ -62,25 +65,23 @@ class Cluster(object):
         while True:
             try:
                 latest_jobs = self._get_jobs()
-                self.lock.acquire()
-                try:
+                with self.lock:
                     self.latest_jobs = latest_jobs
-                finally:
-                    self.lock.release()
-                sleep(1)
 
-            # latest_jobs = self._get_jobs()
-            # with self.lock:
-            #     self.latest_jobs = latest_jobs
-            # sleep(1)
+                if not self.requests.empty():
+                    cmd = self.requests.get(block=False)
+                    self._run_command(cmd)
+
+                sleep(1)
 
             except (
                 EOFError,
                 OSError,
             ):
                 # TODO:: Where's the best place to do error handing
-                self.fabric_connection = fabric.Connection(self.remote)
-                self.fabric_connection.open()
+                with self.lock:
+                    self.fabric_connection = fabric.Connection(self.remote)
+                    self.fabric_connection.open()
 
     def _run_command(self, cmd: str):
         if self.remote is not None:
@@ -137,33 +138,30 @@ class Cluster(object):
 
     @when_connected
     def get_jobs(self):
-        # TODO Acquire a lock a return a clone?
-        self.lock.acquire()
-        try:
+        with self.lock:
             jobs_copy = copy.deepcopy(self.latest_jobs)
-        finally:
-            self.lock.release()
-
         return jobs_copy
 
     @when_connected
     def cancel_jobs(self, jobs):
         job_ids = " ".join(str([j.job_id]) for j in jobs)
-        with self.lock:
-            self._run_command(f"scancel {job_ids}")
+        self.requests.put(f"scancel {job_ids}")
 
     @when_connected
     def cancel_my_jobs(self):
-        with self.lock:
-            self._run_command(f"scancel -u {self.me}")
+        self.requests.put(f"scancel -u {self.me}")
 
     @when_connected
     def cancel_my_newest_job(self):
-        pass
+        self.requests.put(
+            f'squeue -u {self.me} --sort=-V -h --format="%A" | head -n 1 | xargs scancel'
+        )
 
     @when_connected
     def cancel_my_oldest_job(self):
-        pass
+        self.requests.put(
+            f'squeue -u {self.me} --sort=+V -h --format="%A" | head -n 1 | xargs scancel'
+        )
 
 
 class Job(object):
