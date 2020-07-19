@@ -1,13 +1,13 @@
 import argparse
-from datetime import datetime
 from collections import OrderedDict
+from datetime import datetime
 
 import urwid
 
-from stui import backend
-from stui.nodes import NodesTab
-from stui.admin import AdminTab
 import stui.widgets as widgets
+from stui import backend
+from stui.admin import AdminTab
+from stui.nodes import NodesTab
 
 UPDATE_INTERVAL = 1
 

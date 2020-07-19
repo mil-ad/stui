@@ -1,11 +1,11 @@
-import subprocess
+import copy
+import functools
+import os
 import re
 import shutil
+import subprocess
 import threading
 from time import sleep
-import copy
-import os
-import functools
 
 import fabric
 
