@@ -144,7 +144,7 @@ class Cluster(object):
 
     @when_connected
     def cancel_jobs(self, jobs):
-        job_ids = " ".join(str([j.job_id]) for j in jobs)
+        job_ids = " ".join(str(j.job_id) for j in jobs)
         self.requests.put(f"scancel {job_ids}")
 
     @when_connected
