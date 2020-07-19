@@ -4,40 +4,61 @@ import shutil
 import threading
 from time import sleep
 import copy
+import os
+import functools
 
 import fabric
 
+__all__ = ["Cluster"]
+
+
+def when_connected(deocrated_f):
+    @functools.wraps(deocrated_f)
+    def f(self, *args, **kwargs):
+        if not self.is_ready.is_set():
+            raise EnvironmentError  # TODO: Use a sensible exception
+
+        return deocrated_f(self, *args, **kwargs)
+
+    return f
+
 
 class Cluster(object):
-    def __init__(self, remote):
+    def __init__(self, remote=None):
         super().__init__()
 
         self.use_fabric = True
         self.remote = remote
 
-        if not remote:
-            if shutil.which("sinfo") is None:
-                raise SystemExit("Slurm binaries not found.")
-        elif self.use_fabric:
-            self.fabric_connection = fabric.Connection(remote)
-            self.fabric_connection.open()
-
-        self.remote = remote
-
-        self.me = self.run_command("whoami")[0]  # TODO
-
-        self.partitions = None
-
-        self.config = self.get_config()
-
-        self.my_partitions, self.all_partitions = self.get_partition_info()
+        self.is_ready = threading.Event()
 
         self.latest_jobs = []
-        self.thread = threading.Thread(target=self.thread_fn, daemon=True)
+        self.thread = threading.Thread(target=self._thread_fn, daemon=True)
         self.lock = threading.Lock()
+
+    def connect(self, fd):
+        self.fd = fd
         self.thread.start()
 
-    def thread_fn(self):
+    def _thread_fn(self):
+
+        if self.remote is None:
+            if shutil.which("sinfo") is None:
+                # TODO: Test this!
+                raise SystemExit("Slurm binaries not found.")
+        elif self.use_fabric:
+            self.fabric_connection = fabric.Connection(self.remote)
+            self.fabric_connection.open()
+
+        self.me = self._run_command("whoami")[0]  # TODO
+        self.config = self._get_config()
+        self.my_partitions, self.all_partitions = self._get_partition_info()
+
+        self.is_ready.set()
+        os.write(self.fd, b"connection established")
+        os.close(self.fd)
+        self.fd = None
+
         while True:
             try:
                 latest_jobs = self._get_jobs()
@@ -47,6 +68,12 @@ class Cluster(object):
                 finally:
                     self.lock.release()
                 sleep(1)
+
+            # latest_jobs = self._get_jobs()
+            # with self.lock:
+            #     self.latest_jobs = latest_jobs
+            # sleep(1)
+
             except (
                 EOFError,
                 OSError,
@@ -55,8 +82,8 @@ class Cluster(object):
                 self.fabric_connection = fabric.Connection(self.remote)
                 self.fabric_connection.open()
 
-    def run_command(self, cmd: str):
-        if self.remote:
+    def _run_command(self, cmd: str):
+        if self.remote is not None:
             if self.use_fabric:
                 results = self.fabric_connection.run(cmd, hide=True)
                 o = results.stdout.splitlines()
@@ -70,8 +97,8 @@ class Cluster(object):
 
         return o
 
-    def get_config(self):
-        o = self.run_command("scontrol show config")
+    def _get_config(self):
+        o = self._run_command("scontrol show config")
 
         pattern = r"(\S+)\s*=(.*)"
 
@@ -85,13 +112,30 @@ class Cluster(object):
 
         return config
 
-    def get_partition_info(self):
+    def _get_partition_info(self):
 
-        my_p = self.run_command('sinfo --format="%R" --noheader')
-        all_p = self.run_command('sinfo --format="%R" --noheader --all')
+        my_p = self._run_command('sinfo --format="%R" --noheader')
+        all_p = self._run_command('sinfo --format="%R" --noheader --all')
 
         return my_p, all_p
 
+    def _get_jobs(self):
+        cmd = 'squeue --all --format="%A|%C|%b|%F|%K|%j|%P|%r|%u|%y|%T|%M|%b|%N"'
+        o = self._run_command(cmd)
+
+        jobs = []
+        fields = o[0].split("|")
+        for line in o[1:]:
+            job = {k: v for k, v in zip(fields, line.split("|"))}
+            jobs.append(Job(job))
+
+        return jobs
+
+    @when_connected
+    def get_name(self):
+        return self.config["ClusterName"]
+
+    @when_connected
     def get_jobs(self):
         # TODO Acquire a lock a return a clone?
         self.lock.acquire()
@@ -102,37 +146,24 @@ class Cluster(object):
 
         return jobs_copy
 
-    def _get_jobs(self):
-        cmd = 'squeue --all --format="%A|%C|%b|%F|%K|%j|%P|%r|%u|%y|%T|%M|%b|%N"'
-        o = self.run_command(cmd)
-
-        jobs = []
-        fields = o[0].split("|")
-        for line in o[1:]:
-            job = {k: v for k, v in zip(fields, line.split("|"))}
-            jobs.append(Job(job))
-
-        return jobs
-
+    @when_connected
     def cancel_jobs(self, jobs):
-        self.lock.acquire()
         job_ids = " ".join(str([j.job_id]) for j in jobs)
-        self.run_command(f"scancel {job_ids}")
-        self.lock.release()
+        with self.lock:
+            self._run_command(f"scancel {job_ids}")
 
+    @when_connected
     def cancel_my_jobs(self):
-        self.lock.acquire()
-        self.run_command(f"scancel -u {self.me}")
-        self.lock.release()
+        with self.lock:
+            self._run_command(f"scancel -u {self.me}")
 
+    @when_connected
     def cancel_my_newest_job(self):
         pass
 
+    @when_connected
     def cancel_my_oldest_job(self):
         pass
-
-    def get_name(self):
-        return self.config["ClusterName"]
 
 
 class Job(object):

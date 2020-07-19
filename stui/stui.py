@@ -603,13 +603,12 @@ class StuiWidget(urwid.WidgetWrap):
         self.cluster = cluster
 
         self.header_time = urwid.Text(datetime.now().strftime("%X"), align="right")
+        self.header_cluster_name = urwid.Text("Cluster: N/A")
+
         header = urwid.Columns(
             [
                 urwid.Text("stui", align="left"),
-                urwid.Text(
-                    [(None, "Cluster:"), ("magenta", self.cluster.get_name())],
-                    align="center",
-                ),
+                self.header_cluster_name,
                 self.header_time,
             ]
         )
@@ -624,8 +623,18 @@ class StuiWidget(urwid.WidgetWrap):
             [self.jobs_tab.get_view(), self.nodes_tab.view, self.admin_tab.view],
         )
 
-        w = urwid.Frame(tabbed, header)
-        super().__init__(w)
+        self.view = urwid.Frame(tabbed, header)
+
+        self.view_placeholder = urwid.WidgetPlaceholder(self.view)
+
+        self.connecting_popup()
+
+        super().__init__(self.view_placeholder)
+
+    def set_cluster_name(self, cluster_name):
+        self.header_cluster_name.set_text(
+            [(None, "Cluster:"), ("magenta", cluster_name)]
+        )
 
     def update_time(self):
         time = datetime.now().strftime("%X")
@@ -633,6 +642,26 @@ class StuiWidget(urwid.WidgetWrap):
 
     def refresh_jobs(self):
         self.jobs_tab.refresh()
+
+    def connecting_popup(self):
+        w = urwid.Text("Connecting to Slurm instance ...")
+        w = widgets.FancyLineBox(w)
+
+        overlay = urwid.Overlay(
+            w,
+            self.view,
+            align="center",
+            width=("relative", 40),
+            valign=("relative", 30),
+            height="pack",
+        )
+
+        self.view_placeholder.original_widget = overlay
+
+    def cluster_connected_callback(self):
+        self.set_cluster_name(self.cluster.get_name())
+        self.refresh_jobs()
+        self.view_placeholder.original_widget = self.view
 
 
 class StuiApp(object):
@@ -663,12 +692,23 @@ class StuiApp(object):
 
         self.w = StuiWidget(self.cluster)
 
-    def run(self):
-
+        # TODO: Do I want to set pop_ups to True?
         self.loop = urwid.MainLoop(
             self.w, self.palette, unhandled_input=self.exit_on_q,
         )
 
+        fd = self.loop.watch_pipe(self.cluster_connected_callback)
+        self.cluster.connect(fd)
+
+    def cluster_connected_callback(self, foo):
+        self.register_refresh()
+        self.w.cluster_connected_callback()
+
+        # Return False so that the watch is removed from main loop and its read-end of
+        # the pipe is closed. The write-end of the pipe will be closed on the backend.
+        return False
+
+    def run(self):
         # self.loop.screen.set_terminal_properties(bright_is_bold=False)
 
         # Current implementation of urwid uses xterm's 47 escape sequences which are not
@@ -679,7 +719,6 @@ class StuiApp(object):
         RESTORE_NORMAL_BUFFER = ESC + "[?1049l" + ESC + "8"
 
         self.loop.screen.write(SWITCH_TO_ALTERNATE_BUFFER)
-        self.register_refresh()
         try:
             self.loop.run()
         except KeyboardInterrupt:
