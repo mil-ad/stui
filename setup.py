@@ -5,8 +5,8 @@ with open("README.md", "r") as fh:
 
 setup(
     name="stui",
-    description="A Slurm client for the terminal.",
-    long_description=readme,  # TODO: Use readme
+    description="A Slurm client for the terminal",
+    long_description=readme,
     version="0.2.0",
     packages=find_packages(),
     author="Milad Alizadeh",
