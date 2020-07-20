@@ -5,7 +5,7 @@
 # stui
 A Slurm dashboard for the terminal.
 
-<img src="screenshot.png" alt="stui screenshot" width="50%"/>
+<img src="screenshot.png" alt="stui screenshot" width="75%"/>
 
 ## Features
 * Connect to local Slurm cluster or remote clusters via SSH
