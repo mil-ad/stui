@@ -633,7 +633,7 @@ class StuiWidget(urwid.WidgetWrap):
 
     def set_cluster_name(self, cluster_name):
         self.header_cluster_name.set_text(
-            [(None, "Cluster:"), ("magenta", cluster_name)]
+            [(None, "Cluster: "), ("magenta", cluster_name)]
         )
 
     def update_time(self):
