@@ -8,7 +8,7 @@ A Slurm dashboard for the terminal.
 <img src="screenshot.png" alt="stui screenshot" width="50%"/>
 
 ## Features
-* Connecting to remote Slurm clusters via SSH
+* Connect to local Slurm cluster or remote clusters via SSH
 * Quickly filter jobs based on commonly-used criteria
 * Cancel, attach to, or modify properties of selected jobs.
 
