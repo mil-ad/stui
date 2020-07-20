@@ -1,13 +1,15 @@
+import codecs
 from setuptools import setup, find_packages
 
-with open("README.md", "r") as fh:
-    readme = fh.read()
+with codecs.open("README.md", encoding="utf-8") as f:
+    README = f.read()
 
 setup(
     name="stui",
     description="A Slurm client for the terminal",
-    long_description=readme,
-    version="0.2.0",
+    long_description=README,
+    long_description_content_type="text/markdown",
+    version="0.2.1",
     packages=find_packages(),
     author="Milad Alizadeh",
     url="https://github.com/mi-lad/stui",
