@@ -603,7 +603,7 @@ class StuiWidget(urwid.WidgetWrap):
         self.cluster = cluster
 
         self.header_time = urwid.Text(datetime.now().strftime("%X"), align="right")
-        self.header_cluster_name = urwid.Text("Cluster: N/A")
+        self.header_cluster_name = urwid.Text("Cluster: N/A", align="center")
 
         header = urwid.Columns(
             [
