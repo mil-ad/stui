@@ -1,4 +1,4 @@
-`name: slurmtop
+name: stui-dev
 channels:
   - defaults
 dependencies:
