@@ -9,7 +9,7 @@ setup(
     description="A Slurm client for the terminal",
     long_description=README,
     long_description_content_type="text/markdown",
-    version="0.2.1",
+    version="0.3.0",
     packages=find_packages(),
     author="Milad Alizadeh",
     url="https://github.com/mi-lad/stui",
