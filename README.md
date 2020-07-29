@@ -29,9 +29,7 @@ $ stui
 To connect to a remote Slurm cluster via SSH:
 
 ```shell
-$ stui --remote REMOTE_MACHINE
+$ stui --remote REMOTE_HOST
 ```
 
-`REMOTE_MACHINE` format is `USER@SERVER_ADDR` or simply the `Host` name specified in the SSH config file.
-
-N.B. there's currently no support for authenticating SSH connections with passwords. SSH keys must have been exchanged for the remote functionality to work.
+where `REMOTE_HOST` is the hostname (or IP address) of the remote machine and may include the user and/or port parameters, of the form `user@host`, `host:port`, or `user@host:port`. If authentication via SSH keys or agent fails you will be prompted to manually enter username and password.

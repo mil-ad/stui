@@ -658,9 +658,34 @@ class StuiWidget(urwid.WidgetWrap):
 
         self.view_placeholder.original_widget = overlay
 
+    def password_prompt_popup(self, ok_handler, cancel_handler):
+
+        w = widgets.PasswordPrompt(
+            cancel_handler,
+            title="SSH Connection Failed",
+            msg="No authentication methods (SSH keys/agent) found. Enter login details manually:",
+        )
+
+        urwid.connect_signal(w, "user_password_provided", ok_handler)
+
+        overlay = urwid.Overlay(
+            w,
+            self.view,
+            align="center",
+            width=("relative", 40),
+            valign=("relative", 30),
+            height="pack",
+        )
+
+        self.view_placeholder.original_widget = overlay
+
     def cluster_connected_callback(self):
         self.set_cluster_name(self.cluster.get_name())
         self.refresh_jobs()
+        self.close_popup()
+
+    def close_popup(self, *args, **kwargs):
+        # TODO: Assert that there's an active popup
         self.view_placeholder.original_widget = self.view
 
 
@@ -697,15 +722,32 @@ class StuiApp(object):
             self.w, self.palette, unhandled_input=self.exit_on_q,
         )
 
-        fd = self.loop.watch_pipe(self.cluster_connected_callback)
-        self.cluster.connect(fd)
+        self.fd = self.loop.watch_pipe(self.cluster_connect_handler)
+        self.cluster.connect(self.fd)
 
-    def cluster_connected_callback(self, foo):
+    def ssh_login_provided_callback(self, user, password):
+        self.w.connecting_popup()
+        self.cluster.connect(self.fd, user, password)
+
+    def cluster_connect_handler(self, message):
+        if message == b"need password" or message == b"wrong password":
+
+            def exit(*args, **kwargs):
+                raise urwid.ExitMainLoop()
+
+            self.w.password_prompt_popup(
+                ok_handler=self.ssh_login_provided_callback, cancel_handler=exit
+            )
+            return True
+
+        elif message == b"connection established":
+            self.fd = None  # TODO: delattr?
         self.register_refresh()
         self.w.cluster_connected_callback()
 
-        # Return False so that the watch is removed from main loop and its read-end of
-        # the pipe is closed. The write-end of the pipe will be closed on the backend.
+            # Return False so that the watch is removed from main loop and its read-end
+            # of the pipe is closed. The write-end of the pipe will be closed on the
+            # backend.
         return False
 
     def run(self):

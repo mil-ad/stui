@@ -3,12 +3,14 @@ import functools
 import os
 import re
 import shutil
+import socket
 import subprocess
 import threading
 from queue import Queue
 from time import sleep
 
 import fabric
+from paramiko.ssh_exception import SSHException
 
 __all__ = ["Cluster"]
 
@@ -24,7 +26,7 @@ def when_connected(deocrated_f):
     return f
 
 
-class Cluster(object):
+class Cluster(threading.Thread):
     def __init__(self, remote=None):
         super().__init__()
 
@@ -34,13 +36,19 @@ class Cluster(object):
         self.is_ready = threading.Event()
 
         self.latest_jobs = []
-        self.thread = threading.Thread(target=self._thread_fn, daemon=True)
 
         self.lock = threading.Lock()
         self.requests = Queue()
+        self.thread = None
 
-    def connect(self, fd):
+    def connect(self, fd, ssh_username=None, ssh_password=None):
         self.fd = fd
+        self.ssh_username = ssh_username
+        self.ssh_password = ssh_password
+
+        if self.thread is not None:
+            self.thread.join()
+        self.thread = threading.Thread(target=self._thread_fn, daemon=True)
         self.thread.start()
 
     def _thread_fn(self):
@@ -50,8 +58,23 @@ class Cluster(object):
                 # TODO: Test this!
                 raise SystemExit("Slurm binaries not found.")
         elif self.use_fabric:
-            self.fabric_connection = fabric.Connection(self.remote)
-            self.fabric_connection.open()
+            connect_kwargs = {
+                "password": self.ssh_password,
+                "look_for_keys": False,
+                "allow_agent": True,
+            }
+            self.fabric_connection = fabric.Connection(
+                self.remote, user=self.ssh_username, connect_kwargs=connect_kwargs
+            )
+
+            try:
+                self.fabric_connection.open()
+            except SSHException as e:
+                if str(e) == "No authentication methods available":
+                    os.write(self.fd, b"need password")
+                elif str(e) == "Authentication failed.":
+                    os.write(self.fd, b"wrong password")
+                return
 
         self.me = self._run_command("whoami")[0]  # TODO
         self.config = self._get_config()
@@ -77,6 +100,7 @@ class Cluster(object):
             except (
                 EOFError,
                 OSError,
+                socket.error,
             ):
                 # TODO:: Where's the best place to do error handing
                 with self.lock:

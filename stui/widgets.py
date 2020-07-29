@@ -13,6 +13,7 @@ __all__ = [
     "Tab",
     "MessageWidget",
     "ConfirmationWidget",
+    "PasswordPrompt",
 ]
 
 
@@ -72,7 +73,7 @@ class FancyButton(urwid.WidgetWrap):
         super().__init__(w)
 
     def sizing(self):
-        return frozenset([FLOW])
+        return frozenset(["flow"])
 
     def set_label(self, label):
         self._label.set_text(label)
@@ -324,6 +325,91 @@ class ConfirmationWidget(urwid.WidgetWrap):
         w = FancyLineBox(w)
 
         super().__init__(w)
+
+
+# TODO: Disable the "OK" button when fields' content are invalid
+class PasswordPrompt(urwid.WidgetWrap):
+    signals = ["user_password_provided"]
+
+    def __init__(self, cancel_handler, title="", msg=None, show_username_field=True):
+
+        self.cancel_handler = cancel_handler  # need to store for processing ESC key
+        self.user = urwid.Edit()
+        self.password = urwid.Edit(mask="*")
+
+        self.user_row = urwid.Columns(
+            [
+                ("weight", 1, urwid.Text("\nUsername:")),
+                ("weight", 2, urwid.LineBox(self.user)),
+            ]
+        )
+
+        self.password_row = urwid.Columns(
+            [
+                ("weight", 1, urwid.Text("\nPassword:")),
+                ("weight", 2, urwid.LineBox(self.password)),
+            ]
+        )
+
+        ok_button = FancyButton(
+            "OK", on_press=self.user_password_provided, padding_len=3, user_data=None
+        )
+        cancel_button = FancyButton("Cancel", on_press=cancel_handler)
+
+        # TODO: Same hack as in ConfirmationWidget.
+        buttons_col = urwid.Columns(
+            [
+                urwid.Padding(cancel_button, width="pack", align="right"),
+                urwid.Padding(ok_button, width="pack", align="left"),
+            ],
+            dividechars=1,
+        )
+
+        rows = [
+            urwid.Divider(),
+            self.user_row,
+            self.password_row,
+            buttons_col,
+        ]
+
+        if msg is not None:
+            rows = [urwid.Divider(), urwid.Text(msg)] + rows
+
+        self.pile = urwid.Pile(rows)
+        w = FancyLineBox(self.pile, title)
+
+        super().__init__(w)
+
+    def user_password_provided(self, *args, **kwargs):
+        u = self.user.get_edit_text()
+        p = self.password.get_edit_text()
+
+        if u != "" and p != "":
+            urwid.emit_signal(self, "user_password_provided", u, p)
+
+    def keypress(self, size, key):
+
+        # urwid doesn't seem to provide support for Tab/Shift+Tab for next/previous
+        # selectable item out of the box hence the inelegant function below
+        def cycle_focus(step):
+            # TODO: focus_order must be adaptive based on "msg" and
+            # "show_username_field" arguments
+            focus_order = [[3, 1], [4, 1], [5, 0], [5, 1]]
+            focus_path = self.pile.get_focus_path()
+            self.pile.set_focus_path(
+                focus_order[(focus_order.index(focus_path) + step) % len(focus_order)]
+            )
+
+        if key == "tab":
+            cycle_focus(1)
+        elif key == "shift tab":
+            cycle_focus(-1)
+        elif key == "enter":
+            self.user_password_provided()
+        elif key == "esc":
+            self.cancel_handler()
+        else:
+            return super().keypress(size, key)
 
 
 class MessageWidget(urwid.WidgetWrap):
