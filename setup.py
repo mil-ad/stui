@@ -21,5 +21,5 @@ setup(
     ],
     install_requires=["urwid", "fabric>=2.5.0"],
     python_requires=">=3.6",
-    entry_points={"console_scripts": ["stui=stui.stui:main",]},
+    entry_points={"console_scripts": ["stui=stui.cli:cli",]},
 )
