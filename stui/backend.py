@@ -1,6 +1,7 @@
 import copy
 import functools
 import os
+import sys
 import re
 import shutil
 import socket
@@ -60,8 +61,10 @@ class Cluster(threading.Thread):
         elif self.use_fabric:
             connect_kwargs = {
                 "password": self.ssh_password,
-                "look_for_keys": False,
+                "look_for_keys": True,
                 "allow_agent": True,
+                "auth_timeout": 10,
+                "timeout": 5,
             }
             self.fabric_connection = fabric.Connection(
                 self.remote, user=self.ssh_username, connect_kwargs=connect_kwargs
@@ -74,6 +77,8 @@ class Cluster(threading.Thread):
                     os.write(self.fd, b"need password")
                 elif str(e) == "Authentication failed.":
                     os.write(self.fd, b"wrong password")
+                else:
+                    sys.exit()
                 return
 
         self.me = self._run_command("whoami")[0]  # TODO
