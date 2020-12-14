@@ -1,0 +1,33 @@
+import argparse
+from stui.stui import StuiApp
+
+
+def parse_args():
+    parser = argparse.ArgumentParser(description="stui")
+
+    parser.add_argument(
+        "--remote",
+        default=None,
+        help="Remote destination where slurm controller is running. Format: --remote {Host name defined in ssh config} or --remote {username@server}. Does _not_ prompt for password and relies on ssh-keys for authentication.",
+    )
+
+    parser.add_argument(
+        "-r",
+        "--refresh-interval",
+        type=int,
+        default=1,
+        help="Refresh interval (in seconds) for fetching data from the cluster. (Default: 1s)",
+    )
+
+    args = parser.parse_args()
+
+    return args
+
+
+def cli():
+    args = parse_args()
+    StuiApp(args).run()
+
+
+if __name__ == "__main__":
+    cli()

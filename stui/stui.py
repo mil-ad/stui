@@ -779,26 +779,3 @@ class StuiApp(object):
 
     def register_refresh(self):
         self.loop.set_alarm_in(UPDATE_INTERVAL, self.refresh_time)
-
-
-def parse_args():
-    parser = argparse.ArgumentParser(description="stui")
-
-    parser.add_argument(
-        "--remote",
-        default=None,
-        help="Remote destination where slurm controller is running. Format: --remote {Host name defined in ssh config} or --remote {username@server}. Does _not_ prompt for password and relies on ssh-keys for authentication.",
-    )
-
-    args = parser.parse_args()
-
-    return args
-
-
-def main():
-    args = parse_args()
-    StuiApp(args).run()
-
-
-if __name__ == "__main__":
-    main()
