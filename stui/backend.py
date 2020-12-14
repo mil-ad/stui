@@ -102,11 +102,13 @@ class Cluster(threading.Thread):
 
                 sleep(1)
 
-            except (
-                EOFError,
-                OSError,
-                socket.error,
-            ):
+            except:
+                # except (
+                #     EOFError,
+                #     OSError,
+                #     socket.error,
+                # ):
+                # TODO implement a proper reconnect state with timeout?
                 # TODO:: Where's the best place to do error handing
                 with self.lock:
                     self.fabric_connection = fabric.Connection(self.remote)
@@ -150,13 +152,23 @@ class Cluster(threading.Thread):
         return my_p, all_p
 
     def _get_jobs(self):
-        cmd = 'squeue --all --format="%A|%C|%b|%F|%K|%j|%P|%r|%u|%y|%T|%M|%b|%N"'
+        # %A : Job id. This will have a unique value for each element of job arrays. (Valid for jobs only)
+        # %F : Job array's job ID. This is the base job ID. For non-array jobs, this is the job ID. (Valid for jobs only)
+        # %i : Job or job step id. In the case of job arrays, the job ID format will be of the form "<base_job_id>_<index>"
+        # %K : Job array index
+        cmd = r'squeue --all --format="%A|%i|%K|%F|%C|%b|%j|%P|%r|%u|%y|%T|%M|%b|%N"'
         o = self._run_command(cmd)
 
         jobs = []
         fields = o[0].split("|")
+
+        # squeue gives the same column name (JOBID) to %A and %i so we'd have to
+        # manually differentiate them here
+        fields[1] = "JOB_ID_COMBINED"
+
         for line in o[1:]:
             job = {k: v for k, v in zip(fields, line.split("|"))}
+            job["whole_line"] = line
             jobs.append(Job(job))
 
         return jobs
@@ -194,30 +206,47 @@ class Cluster(threading.Thread):
 
 
 class Job(object):
-    def __init__(self, string):
+    def __init__(self, d: dict):
         super().__init__()
 
-        self.job_id = string["JOBID"]
-        self.nodes = string["NODELIST"].split(",")
-        self.partition = string["PARTITION"]
-        self.name = string["NAME"]
-        self.user = string["USER"]
-        self.state = string["STATE"]
-        self.time = string["TIME"]
-        self.nice = string["NICE"]
-        self.cpus = string["CPUS"]
-        self.gres = string["GRES"] if "GRES" in string else None
+        self.job_id = d["JOBID"]
+        self.job_id_combined = d["JOB_ID_COMBINED"]
+        self.nodes = d["NODELIST"].split(",")
+        self.partition = d["PARTITION"]
+        self.name = d["NAME"]
+        self.user = d["USER"]
+        self.state = d["STATE"]
+        self.time = d["TIME"]
+        self.nice = d["NICE"]
+        self.cpus = d["CPUS"]
+        self.gres = d["GRES"] if "GRES" in d else None
 
-        self.array_base_id = string["ARRAY_JOB_ID"]
-        self.array_task_id = string["ARRAY_TASK_ID"]
+        self.whole_line = d["whole_line"]
+
+        self.array_base_id = d["ARRAY_JOB_ID"]
+        self.array_task_id = d["ARRAY_TASK_ID"]
 
         self.is_array_job = False if self.array_task_id == "N/A" else True
 
-        if self.is_array_job and "%" in self.array_task_id:
-            match = re.search(r"\d+%(\d+)", self.array_task_id)
-            self.array_throttle = match.group(1)
-        else:
-            self.array_throttle = None
+        if self.is_array_job:
+            if self.is_pending():
+                if "%" in self.array_task_id:
+                    match = re.search(r"-(\d+)%(\d+)$", self.array_task_id)
+                    self.array_total_jobs = match.group(2)
+                    self.array_throttle = match.group(2)
+                else:
+                    match = re.search(r"-(\d+)$", self.array_task_id)
+                    self.array_total_jobs = match.group(1)
+                    self.array_throttle = 0  # TODO: 0 means unlimited. Is this good?
+            else:
+                self.array_throttle = None
+                self.array_total_jobs = None
+
+        # if self.is_array_job and "%" in self.array_task_id:
+        #     match = re.search(r"\d+%(\d+)", self.array_task_id)
+        #     self.array_throttle = match.group(1)
+        # else:
+        #     self.array_throttle = None
 
     def __repr__(self):
         return f"Job {self.job_id} - State{self.state}"
@@ -225,5 +254,17 @@ class Job(object):
     def is_running(self):
         return self.state == "RUNNING"
 
+    def is_pending(self):
+        return self.state == "PENDING"
+
     def uses_gpu(self):
         return "gpu" in self.gres
+
+    def is_array_job_f(self):
+        return self.is_array_job  # TODO: use property?
+
+    def array_str(self):
+        if not self.is_array_job:
+            return ""
+        else:
+            return self.array_task_id

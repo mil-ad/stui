@@ -19,7 +19,7 @@ class JobWidget(urwid.WidgetWrap):
         "CANCELLED": {None: ""},
         "COMPLETED": {None: ""},
         "CONFIGURING": {None: ""},
-        "COMPLETING": {None: ""},
+        "COMPLETING": {None: "job_state_completeing"},
         "DEADLINE": {None: ""},
         "FAILED": {None: ""},
         "NODE FAIL": {None: ""},
@@ -46,6 +46,7 @@ class JobWidget(urwid.WidgetWrap):
         self.columns = OrderedDict()
         self.columns["selected"] = urwid.Text("", wrap="ellipsis")
         self.columns["job_id"] = urwid.Text("", wrap="ellipsis")
+        self.columns["array"] = urwid.Text("", wrap="ellipsis")
         self.columns["user"] = urwid.Text("", wrap="ellipsis")
         self.columns["name"] = urwid.Text("", wrap="ellipsis")
         self.columns["state"] = urwid.AttrMap(urwid.Text("", wrap="ellipsis"), None)
@@ -73,6 +74,7 @@ class JobWidget(urwid.WidgetWrap):
 
     def update_values(self, job):
         self.columns["job_id"].set_text(job.job_id)
+        self.columns["array"].set_text(job.array_str())
         self.columns["user"].set_text(job.user)
         self.columns["name"].set_text(job.name)
         self.columns["state"]._original_widget.set_text(job.state.title())
@@ -91,7 +93,12 @@ class JobWidget(urwid.WidgetWrap):
             attr = "highlight_out_of_focus"
 
         self._w.set_focus_map(
-            {None: attr, "job_state_running": attr, "job_state_pending": attr}
+            {
+                None: attr,
+                "job_state_running": attr,
+                "job_state_pending": attr,
+                "job_state_completeing": attr,
+            }
         )
 
     def keypress(self, size, key):
@@ -118,6 +125,7 @@ class JobQueueWidget(urwid.WidgetWrap):
     column_widths = [
         (2,),
         (10,),
+        (10,),
         ("weight", 1),
         ("weight", 2),
         (14,),
@@ -133,6 +141,7 @@ class JobQueueWidget(urwid.WidgetWrap):
         column_labels = [
             "",
             "Job ID",
+            "Job Array",
             "User",
             "Name",
             "State",
@@ -298,8 +307,14 @@ class JobActionsWidget(urwid.WidgetWrap):
 
         super().__init__(w)
 
-    def set_nice(self, value):
+    def set_nice_value(self, value):
         self.nice_spinbutton.set_value(value)
+
+    def enable_nice(self):
+        self.nice_spinbutton.enable()
+
+    def disable_nice(self):
+        self.nice_spinbutton.disable()
 
     def enable_throttle(self):
         self.throttle_spinbutton.enable()
@@ -384,13 +399,16 @@ class JobsTab(object):
         if job is None:
             return
 
-        self.apanel.set_nice(job.nice)
+        self.apanel.set_nice_value(job.nice)
 
-        if job.array_throttle is not None:
-            self.apanel.enable_throttle()
-            self.apanel.set_throttle_value(job.array_throttle)
-        else:
+        if job.is_running():
+            self.apanel.disable_nice()
             self.apanel.disable_throttle()
+        else:
+            self.apanel.enable_nice()
+            if job.is_array_job_f():
+                self.apanel.enable_throttle()
+                self.apanel.set_throttle_value(job.array_throttle)
 
     def filter_jobs(self, jobs):
 
@@ -706,6 +724,7 @@ class StuiApp(object):
         self.palette = [
             ("job_state_running", "light cyan", ""),
             ("job_state_pending", "yellow", ""),
+            ("job_state_completeing", "light magenta", ""),
             ("active_tab_label", "yellow", ""),
             ("focus_and_active_tab_label", "yellow,underline", ""),
             ("focus_and_inactive_tab_label", "underline", ""),
@@ -748,13 +767,13 @@ class StuiApp(object):
 
         elif message == b"connection established":
             self.fd = None  # TODO: delattr?
-        self.register_refresh()
-        self.w.cluster_connected_callback()
+            self.register_refresh()
+            self.w.cluster_connected_callback()
 
             # Return False so that the watch is removed from main loop and its read-end
             # of the pipe is closed. The write-end of the pipe will be closed on the
             # backend.
-        return False
+            return False
 
     def run(self):
         # self.loop.screen.set_terminal_properties(bright_is_bold=False)
