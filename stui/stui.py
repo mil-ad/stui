@@ -265,9 +265,15 @@ class JobActionsWidget(urwid.WidgetWrap):
             min=1, max=None, start=" ", step=1, label="Throttle:"
         )
 
-        self.attach = widgets.FancyButton("Attach", self._relay_signals)
-        self.cancel_all = widgets.FancyButton("Cancel All", self._relay_signals)
-        self.cancel_mine = widgets.FancyButton("Cancel", self._relay_signals)
+        self.attach = widgets.FancyButton(
+            "Attach", self._relay_signals, underline_char=1
+        )
+        self.cancel_all = widgets.FancyButton(
+            "Cancel All", self._relay_signals, underline_char=8
+        )
+        self.cancel_mine = widgets.FancyButton(
+            "Cancel", self._relay_signals, underline_char=1
+        )
         self.cancel_newest = widgets.FancyButton("Cancel Newest", self._relay_signals)
         self.cancel_oldest = widgets.FancyButton("Cancel Oldest", self._relay_signals)
 

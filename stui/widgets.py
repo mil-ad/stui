@@ -1,3 +1,4 @@
+from typing import Optional
 import urwid
 from urwid.command_map import ACTIVATE
 
@@ -54,16 +55,52 @@ class FancyCheckBox(urwid.CheckBox):
 class FancyButton(urwid.WidgetWrap):
     signals = ["click"]
 
-    def __init__(self, label, on_press=None, user_data=None, padding_len=1):
+    def __init__(
+        self,
+        label,
+        on_press=None,
+        user_data=None,
+        padding_len=1,
+        underline_char: Optional[int] = None,
+    ):
 
         padding = " " * padding_len
         border = "─" * (len(label) + padding_len * 2)
         # cursor_position = len(border) + padding_size
 
+        # TODO: Make this cleaner
+        label_text = []
+        if underline_char:
+            assert underline_char <= len(label)
+
+            if underline_char > 1:
+                label_text.append((None, label[: underline_char - 1]))
+
+            label_text.append(("underline", label[underline_char - 1]))
+
+            if underline_char < len(label):
+                label_text.append((None, label[underline_char:]))
+        else:
+            label_text.append((None, label))
+
         w = urwid.Text(
-            "╭" + border + "╮\n│" + padding + label + padding + "│\n╰" + border + "╯"
+            # ["╭", border, "╮\n│", padding, label, padding, "│\n╰", border, "╯"]
+            [
+                (None, "╭" + border + "╮\n│" + padding),
+                # ("underline", label[0]),
+                # (None, label[1:]),
+                *label_text,
+                (None, padding + "│\n╰" + border + "╯"),
+            ]
         )
-        w = urwid.AttrMap(w, "", "active_tab_label")
+        w = urwid.AttrMap(
+            w,
+            attr_map="",
+            focus_map={
+                None: "active_tab_label",
+                "underline": "focus_and_active_tab_label",
+            },
+        )
 
         # The old way of listening for a change was to pass the callback
         # in to the constructor.  Just convert it to the new way:
