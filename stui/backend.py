@@ -78,7 +78,7 @@ class Cluster(threading.Thread):
                 elif str(e) == "Authentication failed.":
                     os.write(self.fd, b"wrong password")
                 else:
-                    sys.exit()
+                    raise SystemExit("Lost SSH connection.")
                 return
 
         self.me = self._run_command("whoami")[0]  # TODO
@@ -110,9 +110,12 @@ class Cluster(threading.Thread):
                 # ):
                 # TODO implement a proper reconnect state with timeout?
                 # TODO:: Where's the best place to do error handing
-                with self.lock:
-                    self.fabric_connection = fabric.Connection(self.remote)
-                    self.fabric_connection.open()
+                if self.remote:
+                    with self.lock:
+                        self.fabric_connection = fabric.Connection(self.remote)
+                        self.fabric_connection.open()
+                else:
+                    raise SystemExit("Something went wrong.")
 
     def _run_command(self, cmd: str):
         if self.remote is not None:
@@ -126,6 +129,8 @@ class Cluster(threading.Thread):
         else:
             process = subprocess.run(cmd.split(" "), capture_output=True)
             o = process.stdout.decode("utf-8").splitlines()
+            # TODO: for some reason lines are surrounded by quotes when not using SSH
+            o = [line.strip('"') for line in o]
 
         return o
 
