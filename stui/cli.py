@@ -1,5 +1,8 @@
 import argparse
+import sys
+
 from stui.stui import StuiApp
+from stui import __version__
 
 
 def parse_args():
@@ -19,6 +22,10 @@ def parse_args():
         help="Refresh interval (in seconds) for fetching data from the cluster. (Default: 1s)",
     )
 
+    parser.add_argument(
+        "-v", "--version", help="Show version and exit.", action="store_true",
+    )
+
     args = parser.parse_args()
 
     return args
@@ -26,6 +33,11 @@ def parse_args():
 
 def cli():
     args = parse_args()
+
+    if args.version:
+        print(__version__)
+        sys.exit()
+
     StuiApp(args).run()
 
 
