@@ -224,7 +224,7 @@ class Job(object):
         self.time = d["TIME"]
         self.nice = d["NICE"]
         self.cpus = d["CPUS"]
-        self.gres = d["GRES"] if "GRES" in d else None
+        self.gres = d["GRES"] if "GRES" in d else ""
 
         self.whole_line = d["whole_line"]
 
