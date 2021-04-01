@@ -90,32 +90,22 @@ class Cluster(threading.Thread):
         os.close(self.fd)
         self.fd = None
 
-        while True:
-            try:
+        try:
+            while True:
                 latest_jobs = self._get_jobs()
                 with self.lock:
                     self.latest_jobs = latest_jobs
-
                 if not self.requests.empty():
                     cmd = self.requests.get(block=False)
                     self._run_command(cmd)
 
                 sleep(1)
-
-            except:
-                # except (
-                #     EOFError,
-                #     OSError,
-                #     socket.error,
-                # ):
-                # TODO implement a proper reconnect state with timeout?
-                # TODO:: Where's the best place to do error handing
-                if self.remote:
-                    with self.lock:
-                        self.fabric_connection = fabric.Connection(self.remote)
-                        self.fabric_connection.open()
-                else:
-                    raise SystemExit("Something went wrong.")
+        except:
+            # if self.remote:
+            #     self.fabric_connection.close()
+            #     self.fabric_connection = fabric.Connection(self.remote)
+            #     self.fabric_connection.open()
+            raise SystemExit("Something went wrong.")
 
     def _run_command(self, cmd: str):
         if self.remote is not None:
