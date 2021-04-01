@@ -487,9 +487,10 @@ class JobsTab(object):
             try:
                 w = self.job_widgets_dict[job.job_id]
                 w.update_values(job)
+                job_widgets_ordered.append(w)
+                job_widgets_dict[job.job_id] = w
             except KeyError:
                 w = JobWidget(job)
-            finally:
                 job_widgets_ordered.append(w)
                 job_widgets_dict[job.job_id] = w
 
