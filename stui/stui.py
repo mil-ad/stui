@@ -715,31 +715,31 @@ class StuiWidget(urwid.WidgetWrap):
 
 
 class StuiApp(object):
+
+    # (name, foreground, background, mono, foreground_high, background_high)
+    palette = [
+        ("job_state_running", "light cyan", ""),
+        ("job_state_pending", "yellow", ""),
+        ("job_state_completeing", "light magenta", ""),
+        ("active_tab_label", "yellow", ""),
+        ("focus_and_active_tab_label", "yellow,underline", ""),
+        ("focus_and_inactive_tab_label", "underline", ""),
+        ("inactive_tab_label", "", ""),
+        ("disabled_tab_label", "dark gray", ""),
+        ("magenta", "light magenta", ""),
+        ("dark_gray", "dark gray", ""),
+        ("test_A", "light cyan,bold", "", ""),
+        ("reversed", "standout", ""),
+        ("bold", "bold", ""),
+        ("underline", "underline", ""),
+        ("highlight", "black", "yellow", ""),
+        ("highlight_out_of_focus", "black", "brown", ""),
+    ]
+
     def __init__(self, args):
         super().__init__()
 
-        # TODO: Do this in the background? makes startup slow
         self.cluster = backend.Cluster(args.remote)
-
-        # (name, foreground, background, mono, foreground_high, background_high)
-        self.palette = [
-            ("job_state_running", "light cyan", ""),
-            ("job_state_pending", "yellow", ""),
-            ("job_state_completeing", "light magenta", ""),
-            ("active_tab_label", "yellow", ""),
-            ("focus_and_active_tab_label", "yellow,underline", ""),
-            ("focus_and_inactive_tab_label", "underline", ""),
-            ("inactive_tab_label", "", ""),
-            ("disabled_tab_label", "dark gray", ""),
-            ("magenta", "light magenta", ""),
-            ("dark_gray", "dark gray", ""),
-            ("test_A", "light cyan,bold", "", ""),
-            ("reversed", "standout", ""),
-            ("bold", "bold", ""),
-            ("underline", "underline", ""),
-            ("highlight", "black", "yellow", ""),
-            ("highlight_out_of_focus", "black", "brown", ""),
-        ]
 
         self.w = StuiWidget(self.cluster)
 
