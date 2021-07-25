@@ -1,5 +1,4 @@
-import argparse
-from collections import OrderedDict
+import logging
 from datetime import datetime
 
 import urwid
@@ -11,62 +10,13 @@ from stui.nodes import NodesTab
 
 UPDATE_INTERVAL = 1
 
-
-class JobWidget(urwid.WidgetWrap):
-
-    STATE_ATTR_MAPPING = {
-        "BOOT FAIL": {None: ""},
-        "CANCELLED": {None: ""},
-        "COMPLETED": {None: ""},
-        "CONFIGURING": {None: ""},
-        "COMPLETING": {None: "job_state_completeing"},
-        "DEADLINE": {None: ""},
-        "FAILED": {None: ""},
-        "NODE FAIL": {None: ""},
-        "OUT OF MEMORY": {None: ""},
-        "PENDING": {None: "job_state_pending"},
-        "PREEMPTED": {None: ""},
-        "RUNNING": {None: "job_state_running"},
-        "RESV DEL HOLD": {None: ""},
-        "REQUEUE FED": {None: ""},
-        "REQUEUE HOLD": {None: ""},
-        "REQUEUED": {None: ""},
-        "RESIZING": {None: ""},
-        "REVOKED": {None: ""},
-        "SIGNALING": {None: ""},
-        "SPECIAL EXIT": {None: ""},
-        "STAGE OUT": {None: ""},
-        "STOPPED": {None: ""},
-        "SUSPENDED": {None: ""},
-        "TIMEOUT": {None: ""},
-    }
-
-    def __init__(self, job):
-
-        self.columns = OrderedDict()
-        self.columns["selected"] = urwid.Text("", wrap="ellipsis")
-        self.columns["job_id"] = urwid.Text("", wrap="ellipsis")
-        self.columns["array"] = urwid.Text("", wrap="ellipsis")
-        self.columns["user"] = urwid.Text("", wrap="ellipsis")
-        self.columns["name"] = urwid.Text("", wrap="ellipsis")
-        self.columns["state"] = urwid.AttrMap(urwid.Text("", wrap="ellipsis"), None)
-        self.columns["partition"] = urwid.Text("", wrap="ellipsis")
-        self.columns["nodes"] = urwid.Text("", wrap="ellipsis")
-        self.columns["cpus"] = urwid.Text("", wrap="ellipsis")
-        self.columns["gres"] = urwid.Text("", wrap="ellipsis")
-        self.columns["time"] = urwid.Text("", wrap="ellipsis")
-
-        self.update_values(job)
-
-        w = widgets.SelectableColumns(
-            [
-                (*weight, urwid.Padding(c))
-                for weight, c in zip(
-                    JobQueueWidget.column_widths, self.columns.values()
-                )
-            ]
-        )
-        w = urwid.AttrMap(w, None)  # Details be handled by the JobQueueWidget
+logger = logging.getLogger("stui")
+logger.setLevel(logging.DEBUG)
+logger_fh = logging.FileHandler("stui.log", delay=True)
+logger_fh.setFormatter(
+    logging.Formatter("%(asctime)s - %(name)s - %(levelname)s - %(message)s")
+)
+logger.addHandler(logger_fh)
 
         self.selected = False
 

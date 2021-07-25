@@ -1,7 +1,7 @@
 import copy
 import functools
+import logging
 import os
-import sys
 import re
 import shutil
 import socket
@@ -14,6 +14,8 @@ import fabric
 from paramiko.ssh_exception import SSHException
 
 __all__ = ["Cluster"]
+
+logger = logging.getLogger("stui.backend")
 
 
 def when_connected(deocrated_f):
