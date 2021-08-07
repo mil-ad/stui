@@ -57,13 +57,17 @@ class Job(object):
         if self.is_array_job:
             if self.is_pending():
                 if "%" in self.job_id_idx:
-                    match = re.search(r"-(\d+)%(\d+)$", self.job_id_idx)
-                    self.array_total_jobs = match.group(2)
-                    self.array_throttle = match.group(2)
+                    match = re.search(r"(\d+)%(\d+)$", self.job_id_idx)
+                    if match:
+                        self.array_total_jobs = match.group(1)
+                        self.array_throttle = match.group(2)
+                    else:
+                        self.array_total_jobs = None
+                        self.array_throttle = None
                 else:
                     match = re.search(r"-(\d+)$", self.job_id_idx)
                     self.array_total_jobs = match.group(1)
-                    self.array_throttle = 0  # TODO: 0 means unlimited. Is this good?
+                    self.array_throttle = None
             else:
                 self.array_throttle = None
                 self.array_total_jobs = None
