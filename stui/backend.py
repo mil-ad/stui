@@ -4,11 +4,12 @@ import logging
 import os
 import re
 import shutil
-import socket
 import subprocess
 import threading
+from collections import OrderedDict
 from queue import Queue
 from time import sleep
+from typing import Iterable, List
 
 import fabric
 from paramiko.ssh_exception import SSHException
@@ -27,6 +28,66 @@ def when_connected(deocrated_f):
         return deocrated_f(self, *args, **kwargs)
 
     return f
+
+
+class Job(object):
+    def __init__(self, fields: Iterable[str], squeue_str: str):
+        super().__init__()
+
+        self.whole_line = squeue_str
+        squeue_dict = {k: v for k, v in zip(fields, squeue_str.split("|"))}
+
+        self.job_id = squeue_dict["job_id_unique"]
+        self.job_id_combined = squeue_dict["job_id_base_idx"]
+        self.job_id_base = squeue_dict["job_id_base"]
+        self.job_id_idx = squeue_dict["job_id_idx"]
+
+        self.nodes = squeue_dict["nodes"].split(",")
+        self.partition = squeue_dict["partition"]
+        self.name = squeue_dict["job_name"]
+        self.user = squeue_dict["user"]
+        self.state = squeue_dict["state"]
+        self.time = squeue_dict["time"]
+        self.nice = squeue_dict["nice"]
+        self.cpus = squeue_dict["cpus"]
+        self.gres = squeue_dict["tres"]
+
+        self.is_array_job = False if self.job_id_idx == "N/A" else True
+
+        if self.is_array_job:
+            if self.is_pending():
+                if "%" in self.job_id_idx:
+                    match = re.search(r"-(\d+)%(\d+)$", self.job_id_idx)
+                    self.array_total_jobs = match.group(2)
+                    self.array_throttle = match.group(2)
+                else:
+                    match = re.search(r"-(\d+)$", self.job_id_idx)
+                    self.array_total_jobs = match.group(1)
+                    self.array_throttle = 0  # TODO: 0 means unlimited. Is this good?
+            else:
+                self.array_throttle = None
+                self.array_total_jobs = None
+
+    def __repr__(self):
+        return f"Job {self.job_id} - State{self.state}"
+
+    def is_running(self):
+        return self.state == "RUNNING"
+
+    def is_pending(self):
+        return self.state == "PENDING"
+
+    def uses_gpu(self):
+        return "gpu" in self.gres
+
+    def is_array_job_f(self):
+        return self.is_array_job  # TODO: use property?
+
+    def array_str(self):
+        if not self.is_array_job:
+            return ""
+        else:
+            return self.job_id_idx
 
 
 class Cluster(threading.Thread):
@@ -148,27 +209,46 @@ class Cluster(threading.Thread):
 
         return my_p, all_p
 
-    def _get_jobs(self):
-        # %A : Job id. This will have a unique value for each element of job arrays. (Valid for jobs only)
-        # %F : Job array's job ID. This is the base job ID. For non-array jobs, this is the job ID. (Valid for jobs only)
-        # %i : Job or job step id. In the case of job arrays, the job ID format will be of the form "<base_job_id>_<index>"
-        # %K : Job array index
-        cmd = r'squeue --all --format="%A|%i|%K|%F|%C|%b|%j|%P|%r|%u|%y|%T|%M|%b|%N"'
-        o = self._run_command(cmd)
+    def _get_jobs(self) -> List[Job]:
+        """
+        squeue has two formatting commands: --format and --Format (-o and -O). The
+        former is more flexible in terms of constructing a string but it uses single
+        letters for each field and slurm devs eventually ran out of letters to use! I
+        think going forward they want peopel to use the long format. Some of the short
+        format flags are not even documented, including the %b which I use is used to
+        display TRES_PER_NODE. However, I prefer to use the short format because I can
+        put my own delimeter character. It also assigns as many characters as needed to
+        fully display a field. --Format on the other hand assigns 20 characters by
+        default although you can specify more.
 
-        jobs = []
-        fields = o[0].split("|")
+        Returns: List[Job]
+        """
 
-        # squeue gives the same column name (JOBID) to %A and %i so we'd have to
-        # manually differentiate them here
-        fields[1] = "JOB_ID_COMBINED"
+        fields = OrderedDict(
+            {
+                "job_id_unique": r"%A",  # for job arrays this will have a unique value for each element
+                "job_id_base_idx": r"%i",  # for job arrays has the form "<base_job_id>_<index>"
+                "job_id_base": r"%F",  # Job array's base job ID. For non-array jobs, this is the job ID
+                "job_id_idx": r"%K",  # Job array's index
+                "cpus": r"%C",
+                "job_name": r"%j",
+                "partition": r"%P",
+                "reason": r"%r",
+                "user": r"%u",
+                "nice": r"%y",
+                "state": r"%T",
+                "time": r"%M",
+                "tres": r"%b",
+                "nodes": r"%N",
+            }
+        )
 
-        for line in o[1:]:
-            job = {k: v for k, v in zip(fields, line.split("|"))}
-            job["whole_line"] = line
-            jobs.append(Job(job))
+        cmd = f'squeue --noheader --all --format="{"|".join(fields.values())}"'
+        cmd_output = self._run_command(cmd)
 
-        return jobs
+        logger.debug(cmd_output)
+
+        return [Job(fields.keys(), line) for line in cmd_output]
 
     @when_connected
     def get_name(self):
@@ -200,68 +280,3 @@ class Cluster(threading.Thread):
         self.requests.put(
             f'squeue -u {self.me} --sort=+V -h --format="%A" | head -n 1 | xargs scancel'
         )
-
-
-class Job(object):
-    def __init__(self, d: dict):
-        super().__init__()
-
-        self.job_id = d["JOBID"]
-        self.job_id_combined = d["JOB_ID_COMBINED"]
-        self.nodes = d["NODELIST"].split(",")
-        self.partition = d["PARTITION"]
-        self.name = d["NAME"]
-        self.user = d["USER"]
-        self.state = d["STATE"]
-        self.time = d["TIME"]
-        self.nice = d["NICE"]
-        self.cpus = d["CPUS"]
-        self.gres = d["GRES"] if "GRES" in d else ""
-
-        self.whole_line = d["whole_line"]
-
-        self.array_base_id = d["ARRAY_JOB_ID"]
-        self.array_task_id = d["ARRAY_TASK_ID"]
-
-        self.is_array_job = False if self.array_task_id == "N/A" else True
-
-        if self.is_array_job:
-            if self.is_pending():
-                if "%" in self.array_task_id:
-                    match = re.search(r"-(\d+)%(\d+)$", self.array_task_id)
-                    self.array_total_jobs = match.group(2)
-                    self.array_throttle = match.group(2)
-                else:
-                    match = re.search(r"-(\d+)$", self.array_task_id)
-                    self.array_total_jobs = match.group(1)
-                    self.array_throttle = 0  # TODO: 0 means unlimited. Is this good?
-            else:
-                self.array_throttle = None
-                self.array_total_jobs = None
-
-        # if self.is_array_job and "%" in self.array_task_id:
-        #     match = re.search(r"\d+%(\d+)", self.array_task_id)
-        #     self.array_throttle = match.group(1)
-        # else:
-        #     self.array_throttle = None
-
-    def __repr__(self):
-        return f"Job {self.job_id} - State{self.state}"
-
-    def is_running(self):
-        return self.state == "RUNNING"
-
-    def is_pending(self):
-        return self.state == "PENDING"
-
-    def uses_gpu(self):
-        return "gpu" in self.gres
-
-    def is_array_job_f(self):
-        return self.is_array_job  # TODO: use property?
-
-    def array_str(self):
-        if not self.is_array_job:
-            return ""
-        else:
-            return self.array_task_id
