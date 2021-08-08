@@ -54,23 +54,19 @@ class Job(object):
 
         self.is_array_job = False if self.job_id_idx == "N/A" else True
 
-        if self.is_array_job:
-            if self.is_pending():
-                if "%" in self.job_id_idx:
-                    match = re.search(r"(\d+)%(\d+)$", self.job_id_idx)
-                    if match:
-                        self.array_total_jobs = match.group(1)
-                        self.array_throttle = match.group(2)
-                    else:
-                        self.array_total_jobs = None
-                        self.array_throttle = None
-                else:
-                    match = re.search(r"-(\d+)$", self.job_id_idx)
+        self.array_total_jobs = None
+        self.array_throttle = None
+        if self.is_array_job and self.is_pending():
+            if "%" in self.job_id_idx:
+                match = re.search(r"(\d+)%(\d+)$", self.job_id_idx)
+                if match:
                     self.array_total_jobs = match.group(1)
-                    self.array_throttle = None
+                    self.array_throttle = match.group(2)
             else:
-                self.array_throttle = None
-                self.array_total_jobs = None
+                # TODO: are there [ ]s?
+                match = re.search(r"_\[(\d+)\]$", self.job_id_idx)
+                if match:
+                    self.array_total_jobs = match.group(1)
 
     def __repr__(self):
         return f"Job {self.job_id} - State{self.state}"
@@ -249,8 +245,6 @@ class Cluster(threading.Thread):
 
         cmd = f'squeue --noheader --all --format="{"|".join(fields.values())}"'
         cmd_output = self._run_command(cmd)
-
-        logger.debug(cmd_output)
 
         return [Job(fields.keys(), line) for line in cmd_output]
 
