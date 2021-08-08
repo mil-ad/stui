@@ -9,7 +9,7 @@ def parse_args():
     parser = argparse.ArgumentParser(description="stui")
 
     parser.add_argument(
-        "--remote",
+        "--ssh",
         default=None,
         help="Remote destination where slurm controller is running. Format: --remote {Host name defined in ssh config} or --remote {username@server}. Does _not_ prompt for password and relies on ssh-keys for authentication.",
     )
