@@ -335,17 +335,17 @@ class Tabbed(urwid.WidgetWrap):
 class ConfirmationWidget(urwid.WidgetWrap):
     def __init__(self, msg, ok_handler, cancel_handler, user_data=None):
 
-        ok_button = FancyButton(
-            "OK", on_press=ok_handler, padding_len=3, user_data=user_data
+        yes_button = FancyButton(
+            "Yes", on_press=ok_handler, padding_len=2, user_data=user_data
         )
-        cancel_button = FancyButton("Cancel", on_press=cancel_handler)
+        no_button = FancyButton("No", on_press=cancel_handler, padding_len=3)
 
         # TODO: I don't understand why I can't apply one Padding with align="center" to
         # align the whole Columns object.
         buttons_col = urwid.Columns(
             [
-                urwid.Padding(cancel_button, width="pack", align="right"),
-                urwid.Padding(ok_button, width="pack", align="left"),
+                urwid.Padding(no_button, width="pack", align="right"),
+                urwid.Padding(yes_button, width="pack", align="left"),
             ],
             dividechars=1,
             focus_column=0,
