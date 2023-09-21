@@ -177,10 +177,10 @@ class Cluster(threading.Thread):
                 o = results.stdout.splitlines()
             else:
                 cmd = f"ssh {self.remote} {cmd}"
-                process = subprocess.run(cmd.split(" "), capture_output=True)
+                process = subprocess.run(cmd.split(" "), stdout=subprocess.PIPE)
                 o = process.stdout.decode("utf-8").splitlines()
         else:
-            process = subprocess.run(cmd.split(" "), capture_output=True)
+            process = subprocess.run(cmd.split(" "), stdout=subprocess.PIPE)
             o = process.stdout.decode("utf-8").splitlines()
             # TODO: for some reason lines are surrounded by quotes when not using SSH
             o = [line.strip('"') for line in o]
