@@ -77,8 +77,8 @@ class StuiWidget(urwid.WidgetWrap):
             self.view,
             align="center",
             width=("relative", 40),
-            valign=("relative", 30),
-            height="pack",
+            valign="middle",
+            height=("relative", 30),
         )
 
         self.view_placeholder.original_widget = overlay
@@ -98,8 +98,8 @@ class StuiWidget(urwid.WidgetWrap):
             self.view,
             align="center",
             width=("relative", 40),
-            valign=("relative", 30),
-            height="pack",
+            valign="middle",
+            height=("relative", 30),
         )
 
         self.view_placeholder.original_widget = overlay
