@@ -137,7 +137,7 @@ class StuiApp(object):
     def __init__(self, args):
         super().__init__()
 
-        self.backend = backend.Cluster(args.ssh, arg.r)
+        self.backend = backend.Cluster(args.ssh, args.refresh_interval)
         self.topmost_widget = StuiWidget(self.backend)
 
         self.loop = urwid.MainLoop(
