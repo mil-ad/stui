@@ -96,6 +96,7 @@ class Cluster(threading.Thread):
 
         self.use_fabric = True
         self.remote = remote
+        self.interval = interval
 
         self.is_ready = threading.Event()
 
@@ -162,7 +163,7 @@ class Cluster(threading.Thread):
                     cmd = self.requests.get(block=False)
                     self._run_command(cmd)
 
-                sleep(interval)
+                sleep(self.interval)
         except:
             # if self.remote:
             #     self.fabric_connection.close()
