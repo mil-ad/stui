@@ -19,8 +19,6 @@ logger_fh.setFormatter(
 )
 logger.addHandler(logger_fh)
 
-UPDATE_INTERVAL = 1
-
 
 class StuiWidget(urwid.WidgetWrap):
     def __init__(self, cluster):
@@ -139,7 +137,7 @@ class StuiApp(object):
     def __init__(self, args):
         super().__init__()
 
-        self.backend = backend.Cluster(args.ssh)
+        self.backend = backend.Cluster(args.ssh, arg.r)
         self.topmost_widget = StuiWidget(self.backend)
 
         self.loop = urwid.MainLoop(
@@ -205,4 +203,4 @@ class StuiApp(object):
         self.register_refresh()
 
     def register_refresh(self):
-        self.loop.set_alarm_in(UPDATE_INTERVAL, self.refresh_time)
+        self.loop.set_alarm_in(args.r, self.refresh_time)
