@@ -149,8 +149,8 @@ class StuiApp(object):
             pop_ups=False,
         )
 
-        logger.debug(f"MainLoop instance: {self.loop}")
-        logger.debug(f"watch_pipe available: {'watch_pipe' in dir(self.loop)}")
+        print(f"MainLoop instance: {self.loop}")
+        print(f"watch_pipe available: {'watch_pipe' in dir(self.loop)}")
 
         self.fd = self.loop.watch_pipe(self.cluster_connect_callback)
         self.backend.connect(self.fd)
