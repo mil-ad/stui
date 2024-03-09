@@ -91,7 +91,7 @@ class Job(object):
 
 
 class Cluster(threading.Thread):
-    def __init__(self, remote=None, intervel=10):
+    def __init__(self, remote=None, interval=10):
         super().__init__()
 
         self.use_fabric = True
