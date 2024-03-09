@@ -3,6 +3,7 @@ import logging
 from datetime import datetime
 
 import urwid
+from urwid import MainLoop
 
 import stui.widgets as widgets
 from stui import backend
@@ -140,7 +141,7 @@ class StuiApp(object):
         self.backend = backend.Cluster(args.ssh, args.refresh_interval)
         self.topmost_widget = StuiWidget(self.backend)
 
-        self.loop = urwid.MainLoop(
+        self.loop = MainLoop(
             self.topmost_widget,
             self.palette,
             handle_mouse=True,
