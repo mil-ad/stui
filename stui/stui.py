@@ -3,7 +3,6 @@ import logging
 from datetime import datetime
 
 import urwid
-from urwid import MainLoop
 
 import stui.widgets as widgets
 from stui import backend
@@ -141,7 +140,7 @@ class StuiApp(object):
         self.backend = backend.Cluster(args.ssh, args.refresh_interval)
         self.topmost_widget = StuiWidget(self.backend)
 
-        self.loop = MainLoop(
+        self.loop = urwid.MainLoop(
             self.topmost_widget,
             self.palette,
             handle_mouse=True,
@@ -149,6 +148,9 @@ class StuiApp(object):
             event_loop=urwid.AsyncioEventLoop(loop=asyncio.get_event_loop()),
             pop_ups=False,
         )
+
+        logger.debug(f"MainLoop instance: {self.loop}")
+        logger.debug(f"watch_pipe available: {'watch_pipe' in dir(self.loop)}")
 
         self.fd = self.loop.watch_pipe(self.cluster_connect_callback)
         self.backend.connect(self.fd)
