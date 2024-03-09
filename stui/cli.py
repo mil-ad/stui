@@ -4,6 +4,13 @@ import sys
 from stui.stui import StuiApp
 from stui import __version__
 
+def min_value_check(minimum):
+    def check(value):
+        ivalue = int(value)
+        if ivalue < minimum:
+            raise argparse.ArgumentTypeError(f"Minimum value allowed is {minimum}")
+        return ivalue
+    return check
 
 def parse_args():
     parser = argparse.ArgumentParser(description="stui")
@@ -17,7 +24,7 @@ def parse_args():
     parser.add_argument(
         "-r",
         "--refresh-interval",
-        type=int,
+        type=min_value_check(10),
         default=1,
         help="Refresh interval (in seconds) for fetching data from the cluster. (Default: 1s)",
     )
