@@ -155,7 +155,7 @@ class StuiApp(object):
         self.fd = self.loop.watch_pipe(self.cluster_connect_callback)
         self.backend.connect(self.fd)
 
-        self.refresh_interval = args.refresh_interval
+        self.refresh_interval = 1
 
     def ssh_login_provided_callback(self, user, password):
         self.topmost_widget.connecting_popup()
