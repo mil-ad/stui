@@ -91,11 +91,12 @@ class Job(object):
 
 
 class Cluster(threading.Thread):
-    def __init__(self, remote=None):
+    def __init__(self, remote=None, interval=10):
         super().__init__()
 
         self.use_fabric = True
         self.remote = remote
+        self.interval = interval
 
         self.is_ready = threading.Event()
 
@@ -162,7 +163,7 @@ class Cluster(threading.Thread):
                     cmd = self.requests.get(block=False)
                     self._run_command(cmd)
 
-                sleep(1)
+                sleep(self.interval)
         except:
             # if self.remote:
             #     self.fabric_connection.close()
