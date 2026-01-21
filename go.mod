@@ -3,6 +3,7 @@ module github.com/mil-ad/stui
 go 1.25.6
 
 require (
+	charm.land/bubbles/v2 v2.0.0-rc.1 // indirect
 	charm.land/bubbletea/v2 v2.0.0-rc.2 // indirect
 	github.com/charmbracelet/colorprofile v0.3.3 // indirect
 	github.com/charmbracelet/ultraviolet v0.0.0-20251116181749-377898bcce38 // indirect

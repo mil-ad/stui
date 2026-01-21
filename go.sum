@@ -1,3 +1,5 @@
+charm.land/bubbles/v2 v2.0.0-rc.1 h1:EiIFVAc3Zi/yY86td+79mPhHR7AqZ1OxF+6ztpOCRaM=
+charm.land/bubbles/v2 v2.0.0-rc.1/go.mod h1:5AbN6cEd/47gkEf8TgiQ2O3RZ5QxMS14l9W+7F9fPC4=
 charm.land/bubbletea/v2 v2.0.0-rc.2 h1:TdTbUOFzbufDJmSz/3gomL6q+fR6HwfY+P13hXQzD7k=
 charm.land/bubbletea/v2 v2.0.0-rc.2/go.mod h1:IXFmnCnMLTWw/KQ9rEatSYqbAPAYi8kA3Yqwa1SFnLk=
 github.com/charmbracelet/colorprofile v0.3.3 h1:DjJzJtLP6/NZ8p7Cgjno0CKGr7wwRJGxWUwh2IyhfAI=
