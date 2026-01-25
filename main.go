@@ -3,19 +3,24 @@ package main
 import (
 	"fmt"
 
-	tea "charm.land/bubbletea/v2"
+	"github.com/mil-ad/stui/styles"
+
+	tea "github.com/charmbracelet/bubbletea"
 )
 
-type clusterInfo string
+type clusterInfoMsg string
 
 func fetchInfo() tea.Msg {
-	return clusterInfo("MyCluster")
+	return clusterInfoMsg("MyCluster")
 }
 
 type model struct {
 	cluster_name string
 	jobs         []string
 	nodes        []string
+
+	height int
+	width  int
 }
 
 func initialModel() model {
@@ -34,27 +39,29 @@ func (m model) Init() tea.Cmd {
 
 func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	switch msg := msg.(type) {
-	case clusterInfo:
+	case clusterInfoMsg:
 		m.cluster_name = string(msg)
 	case tea.KeyMsg:
 		switch msg.String() {
 		case "q":
 			return m, tea.Quit
 		}
+	case tea.WindowSizeMsg:
+		m.height = msg.Height
+		m.width = msg.Width
 	}
 	return m, nil
 }
 
-func (m model) View() tea.View {
-	v := tea.NewView(fmt.Sprintf("cluster name:%s", m.cluster_name))
-
-	v.AltScreen = true
-
-	return v
+func (m model) View() string {
+	return styles.BorderStyle.
+		Width(m.width - 2).
+		Height(m.height - 2).
+		Render(fmt.Sprintf("cluster name:%s", m.cluster_name))
 }
 
 func main() {
-	p := tea.NewProgram(initialModel())
+	p := tea.NewProgram(initialModel(), tea.WithAltScreen())
 
 	p.Run()
 	// TODO: add error handling
