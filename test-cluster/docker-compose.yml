@@ -1,0 +1,53 @@
+services:
+  slurmctld:
+    build: .
+    container_name: slurmctld
+    hostname: slurmctld
+    environment:
+      SLURM_ROLE: slurmctld
+    volumes:
+      - shared-home:/home
+      - shared-jobs:/opt/fake_jobs
+    networks:
+      slurm-net:
+        aliases:
+          - slurmctld
+
+  node1:
+    build: .
+    container_name: node1
+    hostname: node1
+    environment:
+      SLURM_ROLE: slurmd
+    volumes:
+      - shared-home:/home
+      - shared-jobs:/opt/fake_jobs
+    depends_on:
+      - slurmctld
+    networks:
+      slurm-net:
+        aliases:
+          - node1
+
+  node2:
+    build: .
+    container_name: node2
+    hostname: node2
+    environment:
+      SLURM_ROLE: slurmd
+    volumes:
+      - shared-home:/home
+      - shared-jobs:/opt/fake_jobs
+    depends_on:
+      - slurmctld
+    networks:
+      slurm-net:
+        aliases:
+          - node2
+
+volumes:
+  shared-home:
+  shared-jobs:
+
+networks:
+  slurm-net:
