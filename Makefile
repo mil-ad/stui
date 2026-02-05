@@ -1,6 +1,6 @@
 COMPOSE = sudo docker compose -f test-cluster/docker-compose.yml
 
-.PHONY: up down build rebuild submit shell squeue sinfo logs clean
+.PHONY: up down build rebuild submit shell squeue sinfo rest-token rest-ping rest-jobs logs clean
 
 ## Cluster lifecycle
 up: ## Start the test cluster
@@ -28,6 +28,18 @@ squeue: ## Show job queue
 
 sinfo: ## Show node/partition status
 	$(COMPOSE) exec slurmctld sinfo
+
+## REST API
+rest-token: ## Generate a JWT token for user alice (valid 1 hour)
+	$(COMPOSE) exec slurmctld scontrol token username=alice lifespan=3600
+
+rest-ping: ## Test REST API ping
+	@TOKEN=$$($(COMPOSE) exec -T slurmctld scontrol token username=alice lifespan=3600 2>/dev/null | grep SLURM_JWT | cut -d= -f2) && \
+	curl -s -H "X-SLURM-USER-NAME: alice" -H "X-SLURM-USER-TOKEN: $$TOKEN" http://localhost:6820/slurm/v0.0.37/ping
+
+rest-jobs: ## Get jobs via REST API
+	@TOKEN=$$($(COMPOSE) exec -T slurmctld scontrol token username=alice lifespan=3600 2>/dev/null | grep SLURM_JWT | cut -d= -f2) && \
+	curl -s -H "X-SLURM-USER-NAME: alice" -H "X-SLURM-USER-TOKEN: $$TOKEN" http://localhost:6820/slurm/v0.0.37/jobs
 
 logs: ## Tail logs from all containers
 	$(COMPOSE) logs -f

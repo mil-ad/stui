@@ -1,4 +1,33 @@
 services:
+  mysql:
+    image: mariadb:10.11
+    container_name: mysql
+    hostname: mysql
+    environment:
+      MYSQL_ROOT_PASSWORD: rootpass
+      MYSQL_DATABASE: slurm_acct_db
+      MYSQL_USER: slurm
+      MYSQL_PASSWORD: slurmpass
+    volumes:
+      - mysql-data:/var/lib/mysql
+    networks:
+      slurm-net:
+        aliases:
+          - mysql
+
+  slurmdbd:
+    build: .
+    container_name: slurmdbd
+    hostname: slurmdbd
+    environment:
+      SLURM_ROLE: slurmdbd
+    depends_on:
+      - mysql
+    networks:
+      slurm-net:
+        aliases:
+          - slurmdbd
+
   slurmctld:
     build: .
     container_name: slurmctld
@@ -8,10 +37,30 @@ services:
     volumes:
       - shared-home:/home
       - shared-jobs:/opt/fake_jobs
+    depends_on:
+      - slurmdbd
     networks:
       slurm-net:
         aliases:
           - slurmctld
+
+  slurmrestd:
+    build: .
+    container_name: slurmrestd
+    hostname: slurmrestd
+    privileged: true
+    environment:
+      SLURM_ROLE: slurmrestd
+    ports:
+      - "6820:6820"
+    volumes:
+      - shared-home:/home
+    depends_on:
+      - slurmctld
+    networks:
+      slurm-net:
+        aliases:
+          - slurmrestd
 
   node1:
     build: .
@@ -46,6 +95,7 @@ services:
           - node2
 
 volumes:
+  mysql-data:
   shared-home:
   shared-jobs:
 
