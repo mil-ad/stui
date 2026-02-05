@@ -27,6 +27,9 @@ make submit         Submit fake jobs
 make squeue         Show job queue
 make sinfo          Show node/partition status
 make shell          Interactive shell on slurmctld
+make rest-token     Generate a JWT token for alice
+make rest-ping      REST API ping
+make rest-jobs      REST API job list
 make logs           Tail all container logs
 make logs-ctrl      Tail slurmctld logs only
 make clean          Stop cluster, remove volumes and images
@@ -36,7 +39,10 @@ make clean          Stop cluster, remove volumes and images
 
 | Service | Role | Hostname |
 |---|---|---|
+| mysql | Database | mysql |
+| slurmdbd | Accounting | slurmdbd |
 | slurmctld | Controller | slurmctld |
+| slurmrestd | REST API | slurmrestd |
 | node1 | Compute | node1 |
 | node2 | Compute | node2 |
 
@@ -65,3 +71,16 @@ Jobs are lightweight (sleep + print loops) and finish within a few minutes. Fail
 | `matrix_multiply.py` | ~1-3 min |
 | `failed_job.py` | ~30s-1 min (then crashes) |
 | quick-test / sanity-check | ~5s |
+
+## REST API
+
+The REST API runs on `http://localhost:6820` and uses JWT auth.
+
+Quick check:
+
+```bash
+make rest-ping
+make rest-jobs
+```
+
+If REST calls are slow, check `slurmrestd` logs for DNS resolution errors and rebuild the cluster to refresh `/etc/hosts` and resolver settings.
