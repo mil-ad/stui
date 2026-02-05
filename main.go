@@ -16,8 +16,8 @@ func fetchInfo() tea.Msg {
 
 type model struct {
 	cluster_name string
-	jobs         []string
-	nodes        []string
+	jobs         []Job
+	nodes        []Node
 
 	height int
 	width  int
@@ -26,8 +26,8 @@ type model struct {
 func initialModel() model {
 	m := model{
 		cluster_name: "N/A",
-		jobs:         []string{},
-		nodes:        []string{},
+		jobs:         []Job{},
+		nodes:        []Node{},
 	}
 
 	return m
