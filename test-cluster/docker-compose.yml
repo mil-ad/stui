@@ -49,8 +49,12 @@ services:
     container_name: slurmrestd
     hostname: slurmrestd
     privileged: true
+    stop_grace_period: 2s
     environment:
       SLURM_ROLE: slurmrestd
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+      - "dockerhost:host-gateway"
     ports:
       - "6820:6820"
     volumes:
@@ -101,3 +105,5 @@ volumes:
 
 networks:
   slurm-net:
+    driver: bridge
+    enable_ipv6: false
