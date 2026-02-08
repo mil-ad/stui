@@ -1,34 +1,25 @@
 COMPOSE = sudo docker compose -f test-cluster/docker-compose.yml
 TOKEN = $(shell $(COMPOSE) exec -T slurmctld scontrol token username=alice lifespan=3600 2>/dev/null | grep SLURM_JWT | cut -d= -f2)
 
-.PHONY: up down build rebuild submit shell squeue sinfo rest-token rest-ping rest-jobs logs clean build-linux build-host stui-local stui-rest
+.PHONY: up down submit shell squeue sinfo rest-token rest-ping rest-jobs logs clean build stui-local stui-rest
 
 ## Build stui
-build-linux: ## Cross-compile stui for linux/amd64
-	GOOS=linux GOARCH=amd64 go build -o stui
-
-build-host: ## Build stui for host
+build: ## Build stui
 	go build -o stui
 
 ## Run stui
-stui-local: build-linux ## Run stui inside the cluster (local backend)
+stui-local: build ## Run stui inside the cluster (local backend)
 	$(COMPOSE) exec slurmctld /app/stui
 
-stui-rest: build-host ## Run stui against REST API from host
+stui-rest: build ## Run stui against REST API from host
 	./stui
 
 ## Cluster lifecycle
-up: ## Start the test cluster
-	$(COMPOSE) up -d
+up: ## Start the test cluster (rebuilds images if needed)
+	$(COMPOSE) up -d --build
 
 down: ## Stop the test cluster
 	$(COMPOSE) down
-
-build: ## Build images
-	$(COMPOSE) build
-
-rebuild: ## Rebuild images from scratch and start
-	$(COMPOSE) up -d --build
 
 ## Jobs
 submit: ## Submit fake jobs from multiple users
