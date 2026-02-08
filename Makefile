@@ -1,6 +1,21 @@
 COMPOSE = sudo docker compose -f test-cluster/docker-compose.yml
+TOKEN = $(shell $(COMPOSE) exec -T slurmctld scontrol token username=alice lifespan=3600 2>/dev/null | grep SLURM_JWT | cut -d= -f2)
 
-.PHONY: up down build rebuild submit shell squeue sinfo rest-token rest-ping rest-jobs logs clean
+.PHONY: up down build rebuild submit shell squeue sinfo rest-token rest-ping rest-jobs logs clean build-linux build-host stui-local stui-rest
+
+## Build stui
+build-linux: ## Cross-compile stui for linux/amd64
+	GOOS=linux GOARCH=amd64 go build -o stui
+
+build-host: ## Build stui for host
+	go build -o stui
+
+## Run stui
+stui-local: build-linux ## Run stui inside the cluster (local backend)
+	$(COMPOSE) exec slurmctld /app/stui
+
+stui-rest: build-host ## Run stui against REST API from host
+	./stui
 
 ## Cluster lifecycle
 up: ## Start the test cluster
@@ -34,12 +49,10 @@ rest-token: ## Generate a JWT token for user alice (valid 1 hour)
 	$(COMPOSE) exec slurmctld scontrol token username=alice lifespan=3600
 
 rest-ping: ## Test REST API ping
-	@TOKEN=$$($(COMPOSE) exec -T slurmctld scontrol token username=alice lifespan=3600 2>/dev/null | grep SLURM_JWT | cut -d= -f2) && \
-	curl -s -H "X-SLURM-USER-NAME: alice" -H "X-SLURM-USER-TOKEN: $$TOKEN" http://localhost:6820/slurm/v0.0.37/ping
+	@curl -s -H "X-SLURM-USER-NAME: alice" -H "X-SLURM-USER-TOKEN: $(TOKEN)" http://localhost:6820/slurm/v0.0.37/ping
 
 rest-jobs: ## Get jobs via REST API
-	@TOKEN=$$($(COMPOSE) exec -T slurmctld scontrol token username=alice lifespan=3600 2>/dev/null | grep SLURM_JWT | cut -d= -f2) && \
-	curl -s -H "X-SLURM-USER-NAME: alice" -H "X-SLURM-USER-TOKEN: $$TOKEN" http://localhost:6820/slurm/v0.0.37/jobs
+	@curl -s -H "X-SLURM-USER-NAME: alice" -H "X-SLURM-USER-TOKEN: $(TOKEN)" http://localhost:6820/slurm/v0.0.37/jobs
 
 logs: ## Tail logs from all containers
 	$(COMPOSE) logs -f

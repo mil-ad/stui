@@ -37,6 +37,7 @@ services:
     volumes:
       - shared-home:/home
       - shared-jobs:/opt/fake_jobs
+      - ..:/app
     depends_on:
       - slurmdbd
     networks:
