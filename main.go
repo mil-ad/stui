@@ -86,21 +86,27 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 }
 
 func (m model) View() string {
-	var content string
-
 	switch {
 	case m.connecting:
-		content = "Connecting..."
+		return styles.BorderStyle.
+			Width(m.width - 2).
+			Height(m.height - 2).
+			Render("Connecting...")
 	case m.err != nil:
-		content = fmt.Sprintf("Error: %v", m.err)
-	default:
-		content = fmt.Sprintf("cluster: %s  version: %s", m.cluster.Name, m.cluster.Version)
+		return styles.BorderStyle.
+			Width(m.width - 2).
+			Height(m.height - 2).
+			Render(fmt.Sprintf("Error: %v", m.err))
 	}
 
-	return styles.BorderStyle.
+	header := fmt.Sprintf(" %s (Slurm %s)", m.cluster.Name, m.cluster.Version)
+
+	box := styles.BorderStyle.
 		Width(m.width - 2).
-		Height(m.height - 2).
-		Render(content)
+		Height(m.height - 3).
+		Render("")
+
+	return header + "\n" + box
 }
 
 func main() {
