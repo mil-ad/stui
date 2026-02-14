@@ -4,6 +4,8 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/charmbracelet/bubbles/help"
+	"github.com/charmbracelet/bubbles/key"
 	"github.com/charmbracelet/bubbles/table"
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
@@ -68,6 +70,61 @@ func tickCmd() tea.Cmd {
 	})
 }
 
+// Key bindings
+
+type keyMap struct {
+	Search      key.Binding
+	Keybindings key.Binding
+	Quit        key.Binding
+}
+
+func (k keyMap) ShortHelp() []key.Binding {
+	return []key.Binding{k.Search, k.Keybindings, k.Quit}
+}
+
+func (k keyMap) FullHelp() [][]key.Binding {
+	return [][]key.Binding{{k.Search, k.Keybindings, k.Quit}}
+}
+
+var keys = keyMap{
+	Search: key.NewBinding(
+		key.WithKeys("/"),
+		key.WithHelp("/", "search"),
+	),
+	Keybindings: key.NewBinding(
+		key.WithKeys("?"),
+		key.WithHelp("?", "keybindings"),
+	),
+	Quit: key.NewBinding(
+		key.WithKeys("q"),
+		key.WithHelp("q", "quit"),
+	),
+}
+
+func newHelp() help.Model {
+	keyStyle := lipgloss.NewStyle().
+		Bold(true).
+		Foreground(lipgloss.Color("86"))
+
+	descStyle := lipgloss.NewStyle().
+		Foreground(lipgloss.AdaptiveColor{Light: "#B2B2B2", Dark: "#626262"})
+
+	sepStyle := lipgloss.NewStyle().
+		Foreground(lipgloss.AdaptiveColor{Light: "#DDDADA", Dark: "#3C3C3C"})
+
+	h := help.New()
+	h.Styles = help.Styles{
+		ShortKey:       keyStyle,
+		ShortDesc:      descStyle,
+		ShortSeparator: sepStyle,
+		Ellipsis:       sepStyle,
+		FullKey:        keyStyle,
+		FullDesc:       descStyle,
+		FullSeparator:  sepStyle,
+	}
+	return h
+}
+
 // Model
 
 var tableColumns = []table.Column{
@@ -112,6 +169,9 @@ type model struct {
 	jobs     []slurm.Job
 	jobTable table.Model
 
+	keys keyMap
+	help help.Model
+
 	height int
 	width  int
 }
@@ -121,6 +181,8 @@ func newModel() model {
 		connecting: true,
 		jobs:       []slurm.Job{},
 		jobTable:   newJobTable(),
+		keys:       keys,
+		help:       newHelp(),
 	}
 }
 
@@ -168,17 +230,19 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		return m, tickCmd()
 
 	case tea.KeyMsg:
-		switch msg.String() {
-		case "q":
+		switch {
+		case key.Matches(msg, m.keys.Quit):
 			return m, tea.Quit
 		}
 
 	case tea.WindowSizeMsg:
 		m.height = msg.Height
 		m.width = msg.Width
+		m.help.Width = m.width
 		// Border takes 2 rows (top+bottom) and 2 cols (left+right)
 		// Table header row takes ~2 lines (header + border)
-		m.jobTable.SetHeight(m.height - 2 - 4)
+		// Help bar takes 1 line + header takes 1 line
+		m.jobTable.SetHeight(m.height - 2 - 4 - 1)
 		m.jobTable.SetWidth(m.width - 4)
 	}
 
@@ -205,10 +269,12 @@ func (m model) View() string {
 
 	box := styles.BorderStyle.
 		Width(m.width - 2).
-		Height(m.height - 3).
+		Height(m.height - 4).
 		Render(m.jobTable.View())
 
-	return header + "\n" + box
+	helpView := m.help.View(m.keys)
+
+	return header + "\n" + box + "\n" + helpView
 }
 
 func jobsToRows(jobs []slurm.Job) []table.Row {
