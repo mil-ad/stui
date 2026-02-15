@@ -10,6 +10,7 @@ import (
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
 
+	"github.com/mil-ad/stui/components/tabs"
 	"github.com/mil-ad/stui/slurm"
 	"github.com/mil-ad/stui/styles"
 )
@@ -73,20 +74,30 @@ func tickCmd() tea.Cmd {
 // Key bindings
 
 type keyMap struct {
+	NextTab     key.Binding
+	PrevTab     key.Binding
 	Search      key.Binding
 	Keybindings key.Binding
 	Quit        key.Binding
 }
 
 func (k keyMap) ShortHelp() []key.Binding {
-	return []key.Binding{k.Search, k.Keybindings, k.Quit}
+	return []key.Binding{k.NextTab, k.PrevTab, k.Search, k.Keybindings, k.Quit}
 }
 
 func (k keyMap) FullHelp() [][]key.Binding {
-	return [][]key.Binding{{k.Search, k.Keybindings, k.Quit}}
+	return [][]key.Binding{{k.NextTab, k.PrevTab, k.Search, k.Keybindings, k.Quit}}
 }
 
 var keys = keyMap{
+	NextTab: key.NewBinding(
+		key.WithKeys("tab"),
+		key.WithHelp("tab", "next tab"),
+	),
+	PrevTab: key.NewBinding(
+		key.WithKeys("shift+tab"),
+		key.WithHelp("shift+tab", "prev tab"),
+	),
 	Search: key.NewBinding(
 		key.WithKeys("/"),
 		key.WithHelp("/", "search"),
@@ -154,7 +165,7 @@ func newJobTable() table.Model {
 		BorderForeground(lipgloss.Color("240"))
 	s.Selected = s.Selected.
 		Foreground(lipgloss.Color("229")).
-		Background(lipgloss.Color("57"))
+		Background(lipgloss.Color("86"))
 	t.SetStyles(s)
 
 	return t
@@ -168,6 +179,7 @@ type model struct {
 
 	jobs     []slurm.Job
 	jobTable table.Model
+	tabs     tabs.Model
 
 	keys keyMap
 	help help.Model
@@ -181,6 +193,7 @@ func newModel() model {
 		connecting: true,
 		jobs:       []slurm.Job{},
 		jobTable:   newJobTable(),
+		tabs:       tabs.New("Jobs", "Nodes", "Admin"),
 		keys:       keys,
 		help:       newHelp(),
 	}
@@ -233,16 +246,21 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		switch {
 		case key.Matches(msg, m.keys.Quit):
 			return m, tea.Quit
+		case key.Matches(msg, m.keys.NextTab), key.Matches(msg, m.keys.PrevTab):
+			m.tabs, _ = m.tabs.Update(msg)
+			return m, nil
 		}
 
 	case tea.WindowSizeMsg:
 		m.height = msg.Height
 		m.width = msg.Width
 		m.help.Width = m.width
-		// Border takes 2 rows (top+bottom) and 2 cols (left+right)
-		// Table header row takes ~2 lines (header + border)
-		// Help bar takes 1 line + header takes 1 line
-		m.jobTable.SetHeight(m.height - 2 - 4 - 1)
+		// Tabs get full width; height excludes header line and help bar line
+		m.tabs.SetWidth(m.width)
+		m.tabs.SetHeight(m.height - 2) // header + help bar
+		// Table sizes: content area is tabs height minus tab bar (2 lines) minus bottom border (1 line)
+		// and width minus left+right borders (2 cols)
+		m.jobTable.SetHeight(m.height - 2 - 3 - 2)
 		m.jobTable.SetWidth(m.width - 4)
 	}
 
@@ -267,14 +285,18 @@ func (m model) View() string {
 
 	header := fmt.Sprintf(" %s (Slurm %s) — %d jobs", m.cluster.Name, m.cluster.Version, len(m.jobs))
 
-	box := styles.BorderStyle.
-		Width(m.width - 2).
-		Height(m.height - 4).
-		Render(m.jobTable.View())
+	switch m.tabs.ActiveTab {
+	case 0:
+		m.tabs.SetContent(m.jobTable.View())
+	case 1:
+		m.tabs.SetContent("  Nodes view coming soon...")
+	case 2:
+		m.tabs.SetContent("  Admin view coming soon...")
+	}
 
 	helpView := m.help.View(m.keys)
 
-	return header + "\n" + box + "\n" + helpView
+	return header + "\n" + m.tabs.View() + "\n" + helpView
 }
 
 func jobsToRows(jobs []slurm.Job) []table.Row {
