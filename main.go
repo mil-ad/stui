@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"log"
 	"time"
 
 	"github.com/charmbracelet/bubbles/help"
@@ -38,21 +39,36 @@ type tickMsg time.Time
 
 // Commands
 
-func discoverCluster() tea.Msg {
+func discoverCluster(cfg config) tea.Cmd {
+	return func() tea.Msg {
+		var c interface {
+			slurm.Client
+			Probe() error
+		}
 
-	// TODO: Don't assume Local. Make other clients work too.
-	c := slurm.NewLocalClient()
+		switch cfg.Backend {
+		case "rest":
+			c = slurm.NewRESTClient(
+				cfg.Rest.URL,
+				cfg.Rest.APIVersion,
+				cfg.Rest.Username,
+				cfg.Rest.Token,
+			)
+		default:
+			c = slurm.NewLocalClient()
+		}
 
-	if err := c.Probe(); err != nil {
-		return clusterErrorMsg{err: fmt.Errorf("local slurm not available: %w", err)}
+		if err := c.Probe(); err != nil {
+			return clusterErrorMsg{err: fmt.Errorf("%s backend not available: %w", cfg.Backend, err)}
+		}
+
+		info, err := c.FetchClusterInfo()
+		if err != nil {
+			return clusterErrorMsg{err: fmt.Errorf("failed to fetch cluster info: %w", err)}
+		}
+
+		return clusterConnectedMsg{client: c, cluster: info}
 	}
-
-	info, err := c.FetchClusterInfo()
-	if err != nil {
-		return clusterErrorMsg{err: fmt.Errorf("failed to fetch cluster info: %w", err)}
-	}
-
-	return clusterConnectedMsg{client: c, cluster: info}
 }
 
 func fetchJobs(client slurm.Client) tea.Cmd {
@@ -172,6 +188,7 @@ func newJobTable() table.Model {
 }
 
 type model struct {
+	cfg        config
 	client     slurm.Client
 	cluster    slurm.ClusterInfo
 	connecting bool
@@ -188,8 +205,9 @@ type model struct {
 	width  int
 }
 
-func newModel() model {
+func newModel(cfg config) model {
 	return model{
+		cfg:        cfg,
 		connecting: true,
 		jobs:       []slurm.Job{},
 		jobTable:   newJobTable(),
@@ -200,7 +218,7 @@ func newModel() model {
 }
 
 func (m model) Init() tea.Cmd {
-	return discoverCluster
+	return discoverCluster(m.cfg)
 }
 
 func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
@@ -210,6 +228,11 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		m.cluster = msg.cluster
 		m.connecting = false
 		return m, tea.Batch(fetchJobs(m.client), tickCmd())
+
+	case clusterErrorMsg:
+		m.connecting = false
+		m.err = msg.err
+		return m, nil
 
 	case jobsFetchedMsg:
 		// Preserve selected job across refresh
@@ -334,8 +357,13 @@ func formatDuration(d time.Duration) string {
 }
 
 func main() {
-	p := tea.NewProgram(newModel(), tea.WithAltScreen())
+	cfg, err := loadConfig()
+	if err != nil {
+		log.Fatalf("failed to load config: %v", err)
+	}
 
-	p.Run()
-	// TODO: add error handling
+	p := tea.NewProgram(newModel(cfg), tea.WithAltScreen())
+	if _, err := p.Run(); err != nil {
+		log.Fatalf("error running stui: %v", err)
+	}
 }
